@@ -1447,16 +1447,30 @@
         // === MUSIC SYSTEM (Lana Del Rey - Video Games) ===
         let bgMusic = null;
         let musicPlaying = false;
+        let musicStarted = false;
         const musicBtn = $('musicBtn');
 
         // Temporal: Lana Del Rey - Video Games
         const MUSIC_URL = 'https://cdn.trendybeatz.com/audio/Lana-Del-Rey-Video-Games-(TrendyBeatz.com).mp3';
 
+        function startMusic() {
+            if (musicStarted) return;
+            musicStarted = true;
+
+            bgMusic = new Audio(MUSIC_URL);
+            bgMusic.loop = true;
+            bgMusic.volume = 0.4;
+            bgMusic.play().then(() => {
+                musicPlaying = true;
+                musicBtn.textContent = '🎵';
+                musicBtn.classList.remove('muted');
+            }).catch(e => console.log('Audio blocked'));
+        }
+
         function toggleMusic() {
             if (!bgMusic) {
-                bgMusic = new Audio(MUSIC_URL);
-                bgMusic.loop = true;
-                bgMusic.volume = 0.4;
+                startMusic();
+                return;
             }
 
             if (musicPlaying) {
@@ -1464,7 +1478,7 @@
                 musicBtn.textContent = '🔇';
                 musicBtn.classList.add('muted');
             } else {
-                bgMusic.play().catch(e => console.log('Audio blocked, tap again'));
+                bgMusic.play();
                 musicBtn.textContent = '🎵';
                 musicBtn.classList.remove('muted');
             }
@@ -1473,6 +1487,15 @@
 
         musicBtn.onclick = toggleMusic;
         musicBtn.ontouchend = (e) => { e.preventDefault(); toggleMusic(); };
+
+        // AUTO-START: Activa música con el primer toque en cualquier parte
+        function autoStartMusic() {
+            startMusic();
+            document.removeEventListener('click', autoStartMusic);
+            document.removeEventListener('touchstart', autoStartMusic);
+        }
+        document.addEventListener('click', autoStartMusic);
+        document.addEventListener('touchstart', autoStartMusic);
     </script>
 </body>
 
