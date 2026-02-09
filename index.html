@@ -558,9 +558,21 @@
             "ELLA ME HACE MÁS CHORO 👉❤️👈"
         ];
 
+        // 💀 MINI-BOSS NAMES & PHRASES
+        const MINIBOSS_NAMES = [
+            "ZOMBI CHORO 💀", "EL PERKIN GRANDE 🧟", "ZOMBI FLAITE 🔥",
+            "EL SACOWEA MAYOR 💪", "ZOMBI MATÓN 👹", "PERKIN ALPHA 🦴"
+        ];
+        const MINIBOSS_GORILLA_TAUNT = [
+            "VENGA PA ACÁ PERKIN GRANDE 🦍💪", "ESTE CULIAO ES MÍO WUOM 🦍🔥",
+            "TE VOY A SACAR LA CHUCHA PERKIN 👊", "ATRÁS MI SEÑORA, ESTE ES MÍO 🦍❤️",
+            "JAJAJA ESTE WEON SE CREE CHORO 🦍😤", "VOY A HACERTE PEBRE CTMRE 🦍🩸"
+        ];
+
         // 🎮 KONAMI CODE sequence
         const KONAMI_CODE = ['ArrowUp','ArrowUp','ArrowDown','ArrowDown','ArrowLeft','ArrowRight','ArrowLeft','ArrowRight','b','a'];
         let konamiIndex = 0;
+        let miniBosses = [];
 
         // World size (expandable map)
         const WORLD = { w: 1200, h: 900 };
@@ -583,11 +595,11 @@
             if (loveInterval) clearInterval(loveInterval);
             document.querySelectorAll('.love-explosion,.te-quiero').forEach(e => e.remove());
 
-            gs = { score: 0, room: checkpoint, kills: 0, toKill: 12 + checkpoint * 2, over: false, won: false, paused: true, goriActive: false, goriTimer: 0, goriSpeechTimer: 0, pulse: 0, floats: [], weapon: 0, satanic: false, combo: 0, comboTimer: 0, maxCombo: 0, piropoTimer: 0 };
+            gs = { score: 0, room: checkpoint, kills: 0, toKill: 12 + checkpoint * 2, over: false, won: false, paused: true, goriActive: true, goriTimer: 0, goriSpeechTimer: 0, pulse: 0, floats: [], weapon: 0, satanic: false, satTimer: 0, combo: 0, comboTimer: 0, maxCombo: 0, piropoTimer: 0 };
             player = { x: WORLD.w / 2 - 16, y: WORLD.h / 2 - 16, w: 32, h: 32, speed: 2.5, dx: 0, dy: 0, frame: 0, aim: 0 };
-            gorilla = { x: -200, y: -200, w: 56, h: 56, speed: 3, target: null, punch: 0, walk: 0 };
+            gorilla = { x: WORLD.w / 2 + 30, y: WORLD.h / 2 - 16, w: 56, h: 56, speed: 3, target: null, punch: 0, walk: 0 };
             boss = null;
-            bullets = []; zombies = []; items = []; particles = [];
+            bullets = []; zombies = []; items = []; particles = []; miniBosses = [];
             genObstacles();
             updateUI();
             gameOverScreen.style.display = 'none';
@@ -610,6 +622,14 @@
 
             // FORCE MUSIC START DIRECTLY
             tryPlayMusic();
+
+            // Gorilla greeting at start of each level
+            const greetings = [
+                "VAMOS MI SEÑORA, YO TE CUIDO 🦍❤️", "LISTA PA ROMPERLA WUOM 🦍💪",
+                "JUNTOS SOMOS IMPARABLES 🦍🎀", "EL GORILÓN LLEGÓ PA QUEDARSE 🦍🔥",
+                "PA DELANTE MI KUROMI HERMOSA 🦍💜", "LOS PERKIN NO SABEN LO QUE LES ESPERA 🦍😤"
+            ];
+            setTimeout(() => showSpeech(greetings[Math.floor(Math.random() * greetings.length)]), 500);
 
             // Spawn boss on room 4 and 7
             if (gs.room === 4 || gs.room === 7) {
@@ -714,8 +734,8 @@
             roomIndicator.innerText = `${gs.room}/${MAX_ROOMS}`;
             const w = WEAPONS[gs.weapon];
             weaponName.innerText = `${w.emoji} ${w.name}`;
-            goriStatusEl.innerText = gs.goriActive ? (gs.satanic ? '¡SATÁNICO!' : 'ACTIVO!') : 'OFF';
-            goriStatusEl.classList.toggle('active', gs.goriActive);
+            goriStatusEl.innerText = gs.satanic ? '¡SATÁNICO! 👹🔥' : '🦍 COMPAÑERO';
+            goriStatusEl.classList.toggle('active', true);
             goriStatusEl.classList.toggle('satanic', gs.satanic);
         }
 
@@ -1403,6 +1423,172 @@
             bossHealthBar.style.width = (b.hp / b.maxHp * 100) + '%';
         }
 
+        // === DRAW MINI-BOSS ZOMBIE ===
+        function drawMiniBoss(mb) {
+            const x = mb.x - camera.x, y = mb.y - camera.y;
+            const shake = mb.hit > 0 ? Math.sin(mb.hit * 5) * 3 : 0;
+            const breathe = Math.sin(mb.frame * 0.05) * 2;
+            const wobble = Math.sin(mb.frame * 0.1) * 2;
+
+            ctx.save();
+
+            // Red/orange warning aura
+            ctx.shadowColor = '#ff4400';
+            ctx.shadowBlur = 12 + Math.sin(mb.frame * 0.08) * 6;
+            ctx.fillStyle = 'rgba(255, 60, 0, 0.1)';
+            ctx.beginPath();
+            ctx.arc(x + 20 + shake, y + 22, 32, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.shadowBlur = 0;
+
+            // Shadow
+            ctx.fillStyle = 'rgba(0,0,0,0.4)';
+            ctx.beginPath();
+            ctx.ellipse(x + 20, y + 46, 18, 5, 0, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Legs (thick)
+            ctx.fillStyle = '#1a2a1a';
+            ctx.fillRect(x + 8 + shake, y + 36 + breathe, 8, 10);
+            ctx.fillRect(x + 24 + shake, y + 36 + breathe, 8, 10);
+
+            // Body (bigger than regular zombie)
+            const bodyGrad = ctx.createRadialGradient(x + 20 + shake, y + 26, 3, x + 20 + shake, y + 28, 18);
+            bodyGrad.addColorStop(0, '#3a5a3a');
+            bodyGrad.addColorStop(1, '#1a2a1a');
+            ctx.fillStyle = bodyGrad;
+            ctx.beginPath();
+            ctx.ellipse(x + 20 + shake, y + 28 + breathe, 16, 14, 0, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.strokeStyle = '#0a1a0a';
+            ctx.lineWidth = 1.5;
+            ctx.stroke();
+
+            // Armor plates
+            ctx.fillStyle = '#2a3a2a';
+            ctx.fillRect(x + 8 + shake, y + 18 + breathe, 6, 12);
+            ctx.fillRect(x + 26 + shake, y + 18 + breathe, 6, 12);
+            ctx.strokeStyle = '#4a5a4a';
+            ctx.lineWidth = 0.8;
+            ctx.strokeRect(x + 8 + shake, y + 18 + breathe, 6, 12);
+            ctx.strokeRect(x + 26 + shake, y + 18 + breathe, 6, 12);
+
+            // Head (bigger)
+            const headGrad = ctx.createRadialGradient(x + 20 + wobble + shake, y + 10, 1, x + 20 + wobble + shake, y + 10, 14);
+            headGrad.addColorStop(0, '#4a7a4a');
+            headGrad.addColorStop(1, '#1a3a1a');
+            ctx.fillStyle = headGrad;
+            ctx.beginPath();
+            ctx.arc(x + 20 + wobble + shake, y + 10, 13, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Crown/spikes on head
+            ctx.fillStyle = '#2a4a2a';
+            for (let i = 0; i < 3; i++) {
+                ctx.beginPath();
+                ctx.moveTo(x + 10 + i * 8 + shake, y + 2 + breathe);
+                ctx.lineTo(x + 14 + i * 8 + shake, y - 8 + breathe);
+                ctx.lineTo(x + 18 + i * 8 + shake, y + 2 + breathe);
+                ctx.fill();
+            }
+
+            // Eyes (angry red glow)
+            ctx.shadowColor = '#ff2200';
+            ctx.shadowBlur = 10;
+            ctx.fillStyle = '#ff4400';
+            ctx.beginPath();
+            ctx.arc(x + 14 + wobble + shake, y + 7, 3.5, 0, Math.PI * 2);
+            ctx.arc(x + 26 + wobble + shake, y + 7, 3.5, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.shadowBlur = 0;
+            ctx.fillStyle = '#220000';
+            ctx.beginPath();
+            ctx.arc(x + 14 + wobble + shake, y + 7, 1.5, 0, Math.PI * 2);
+            ctx.arc(x + 26 + wobble + shake, y + 7, 1.5, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Mouth (snarling)
+            ctx.fillStyle = '#0a0a0a';
+            ctx.beginPath();
+            ctx.ellipse(x + 20 + wobble + shake, y + 16, 6, 4, 0, 0, Math.PI);
+            ctx.fill();
+            // Fangs
+            ctx.fillStyle = '#ddd';
+            ctx.beginPath();
+            ctx.moveTo(x + 15 + wobble + shake, y + 14); ctx.lineTo(x + 17 + wobble + shake, y + 19); ctx.lineTo(x + 19 + wobble + shake, y + 14);
+            ctx.fill();
+            ctx.beginPath();
+            ctx.moveTo(x + 21 + wobble + shake, y + 14); ctx.lineTo(x + 23 + wobble + shake, y + 19); ctx.lineTo(x + 25 + wobble + shake, y + 14);
+            ctx.fill();
+
+            // Arms (muscular)
+            const armWave = Math.sin(mb.frame * 0.1) * 6;
+            ctx.fillStyle = '#2a4a2a';
+            ctx.beginPath();
+            ctx.ellipse(x - 2 + armWave + shake, y + 24 + breathe, 8, 5, -0.3, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.beginPath();
+            ctx.ellipse(x + 42 - armWave + shake, y + 24 + breathe, 8, 5, 0.3, 0, Math.PI * 2);
+            ctx.fill();
+            // Fists
+            ctx.fillStyle = '#3a5a3a';
+            ctx.beginPath();
+            ctx.arc(x - 8 + armWave + shake, y + 26 + breathe, 5, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.beginPath();
+            ctx.arc(x + 48 - armWave + shake, y + 26 + breathe, 5, 0, Math.PI * 2);
+            ctx.fill();
+
+            // HP bar above head
+            const barW = 30;
+            const barH = 4;
+            const hpPct = mb.hp / mb.maxHp;
+            ctx.fillStyle = '#333';
+            ctx.fillRect(x + 5 + shake, y - 14, barW, barH);
+            ctx.fillStyle = hpPct > 0.5 ? '#ff6600' : '#ff0000';
+            ctx.fillRect(x + 5 + shake, y - 14, barW * hpPct, barH);
+            ctx.strokeStyle = '#000';
+            ctx.lineWidth = 1;
+            ctx.strokeRect(x + 5 + shake, y - 14, barW, barH);
+
+            // Name tag
+            ctx.font = 'bold 8px Courier New';
+            ctx.textAlign = 'center';
+            ctx.fillStyle = '#ff6600';
+            ctx.fillText(mb.name, x + 20, y - 17);
+
+            // Hit flash
+            if (mb.hit > 0) {
+                mb.hit--;
+                ctx.fillStyle = 'rgba(255, 100, 0, 0.3)';
+                ctx.beginPath();
+                ctx.arc(x + 20 + shake, y + 22, 20, 0, Math.PI * 2);
+                ctx.fill();
+            }
+
+            ctx.restore();
+        }
+
+        // Spawn mini-boss zombie
+        function spawnMiniBoss() {
+            if (gs.over || gs.paused || gs.won || miniBosses.length >= 2) return;
+
+            const dirs = [[0, -30], [0, WORLD.h + 30], [-30, WORLD.h / 2], [WORLD.w + 30, WORLD.h / 2]];
+            const [bx, by] = dirs[Math.floor(Math.random() * 4)];
+            const x = bx === 0 || bx === WORLD.w + 30 ? bx : 50 + Math.random() * (WORLD.w - 100);
+            const y = by === WORLD.h / 2 ? 50 + Math.random() * (WORLD.h - 100) : by;
+            const name = MINIBOSS_NAMES[Math.floor(Math.random() * MINIBOSS_NAMES.length)];
+            const hp = 15 + gs.room * 5;
+
+            miniBosses.push({
+                x, y, w: 40, h: 46, speed: 0.6 + gs.room * 0.04,
+                hp, maxHp: hp, frame: 0, hit: 0, name
+            });
+
+            showSpeech(MINIBOSS_GORILLA_TAUNT[Math.floor(Math.random() * MINIBOSS_GORILLA_TAUNT.length)]);
+            addFloat(x, y - 20, `⚠️ ${name}`);
+        }
+
         // === DRAW APOCALYPTIC OBSTACLES ===
         function drawObstacles() {
             obstacles.forEach(o => {
@@ -1523,7 +1709,7 @@
             });
         }
 
-        // === DRAW STAR (IMPROVED - Gorilla Powerup) ===
+        // === DRAW STAR (Demonic Powerup for Gorilla) ===
         function drawStar(sx, sy, size, pulse) {
             const x = sx - camera.x, y = sy - camera.y;
             const glow = Math.sin(pulse * 0.1) * 0.5 + 0.5;
@@ -1535,18 +1721,18 @@
             ctx.rotate(rot);
             ctx.scale(scale, scale);
 
-            // Outer glow ring
-            ctx.shadowColor = '#ffdd00';
+            // Outer glow ring (red/orange for demonic)
+            ctx.shadowColor = '#ff4400';
             ctx.shadowBlur = 15 + glow * 15;
-            ctx.strokeStyle = `rgba(255, 220, 0, ${0.3 + glow * 0.4})`;
+            ctx.strokeStyle = `rgba(255, 68, 0, ${0.3 + glow * 0.4})`;
             ctx.lineWidth = 2;
             ctx.beginPath();
             ctx.arc(0, 0, size * 0.7, 0, Math.PI * 2);
             ctx.stroke();
 
-            // Star shape (5-pointed)
-            ctx.fillStyle = '#ffcc00';
-            ctx.strokeStyle = '#aa8800';
+            // Star shape (5-pointed, infernal)
+            ctx.fillStyle = '#ff4400';
+            ctx.strokeStyle = '#aa2200';
             ctx.lineWidth = 1;
             ctx.beginPath();
             for (let i = 0; i < 10; i++) {
@@ -1562,23 +1748,23 @@
             ctx.stroke();
 
             // Inner highlight
-            ctx.fillStyle = '#ffee88';
+            ctx.fillStyle = '#ff8844';
             ctx.beginPath();
             ctx.arc(0, -2, size * 0.12, 0, Math.PI * 2);
             ctx.fill();
 
-            // Gorilla emoji in center
+            // Devil emoji in center
             ctx.shadowBlur = 0;
             ctx.font = `${size * 0.4}px serif`;
             ctx.textAlign = 'center';
             ctx.textBaseline = 'middle';
-            ctx.fillText('🦍', 0, 1);
+            ctx.fillText('👹', 0, 1);
 
             ctx.restore();
 
-            // Sparkle particles
+            // Fire sparkle particles
             if (Math.random() > 0.7) {
-                addParticles(sx + size / 2, sy + size / 2, '#ffdd00', 1, 0.8, 15);
+                addParticles(sx + size / 2, sy + size / 2, Math.random() > 0.5 ? '#ff4400' : '#ff6600', 1, 0.8, 15);
             }
         }
 
@@ -1778,17 +1964,39 @@
             gorilla.walk++;
             if (gorilla.punch > 0) gorilla.punch--;
 
-            // Activate satanic mode if boss exists
-            gs.satanic = boss !== null;
+            // Satanic timer from star powerup
+            if (gs.satTimer > 0) {
+                gs.satTimer--;
+                if (gs.satTimer <= 0 && !boss) {
+                    gs.satanic = false;
+                    gorilla.speed = 3;
+                    showSpeech("Ya me calmé... por ahora 🦍😤");
+                    updateUI();
+                }
+            }
+            // Always satanic against room boss
+            if (boss) gs.satanic = true;
 
-            // Find target (prefer boss)
+            // Find target: priority = boss > miniBoss > zombie
             let target = null;
             let minDist = Infinity;
+            let targetType = 'zombie';
 
             if (boss) {
                 target = boss;
                 minDist = Math.hypot(boss.x - gorilla.x, boss.y - gorilla.y);
-            } else {
+                targetType = 'boss';
+            }
+
+            // Mini-bosses get priority over regular zombies
+            miniBosses.forEach(mb => {
+                const d = Math.hypot(mb.x - gorilla.x, mb.y - gorilla.y);
+                if (d < minDist || targetType === 'zombie') {
+                    if (targetType !== 'boss') { minDist = d; target = mb; targetType = 'miniboss'; }
+                }
+            });
+
+            if (targetType === 'zombie') {
                 zombies.forEach(z => {
                     const d = Math.hypot(z.x - gorilla.x, z.y - gorilla.y);
                     if (d < minDist) { minDist = d; target = z; }
@@ -1809,9 +2017,9 @@
                     gorilla.punch = 18;
 
                     if (target === boss) {
-                        boss.hp -= 3;
+                        boss.hp -= (gs.satanic ? 6 : 3);
                         boss.hit = 10;
-                        addFloat(boss.x + 40, boss.y, '-3');
+                        addFloat(boss.x + 40, boss.y, gs.satanic ? '-6 🔥' : '-3');
                         showSpeech(gs.satanic ? "MUERE DEMONIO CULIAO 👹🔥" : GORILLA_PHRASES[Math.floor(Math.random() * GORILLA_PHRASES.length)]);
 
                         if (boss.hp <= 0) {
@@ -1820,7 +2028,24 @@
                             boss = null;
                             bossHealthEl.style.display = 'none';
                             bossLabel.style.display = 'none';
-                            gs.satanic = false;
+                            if (gs.satTimer <= 0) gs.satanic = false;
+                        }
+                    } else if (miniBosses.includes(target)) {
+                        // Gorilla hits mini-boss
+                        target.hp -= (gs.satanic ? 4 : 2);
+                        target.hit = 10;
+                        addFloat(target.x + 20, target.y, gs.satanic ? '-4 🔥' : '-2');
+                        showSpeech(MINIBOSS_GORILLA_TAUNT[Math.floor(Math.random() * MINIBOSS_GORILLA_TAUNT.length)]);
+                        addParticles(target.x + 20, target.y + 20, gs.satanic ? '#ff4400' : '#ffaa00', 8, 2.5, 20);
+
+                        if (target.hp <= 0) {
+                            gs.score += 25;
+                            gs.kills += 3;
+                            addFloat(target.x + 20, target.y, '+25 MINI-BOSS! 💀');
+                            addParticles(target.x + 20, target.y + 20, '#ff0000', 20, 3, 35);
+                            addParticles(target.x + 20, target.y + 20, '#ffaa00', 12, 2, 25);
+                            miniBosses = miniBosses.filter(m => m !== target);
+                            showSpeech("CAGÓ EL PERKIN GRANDE WUOM 🦍💪💀");
                         }
                     } else {
                         zombies = zombies.filter(z => z !== target);
@@ -1846,14 +2071,7 @@
                 gorilla.y += (player.y - 50 - gorilla.y) * 0.02;
             }
 
-            gs.goriTimer--;
-            if (gs.goriTimer <= 0) {
-                gs.goriActive = false;
-                gs.satanic = false;
-                gorilla.x = -200;
-                gorillaSpeech.style.display = 'none';
-                updateUI();
-            }
+            // Gorilla is permanent - no deactivation timer
         }
 
         // Spawners
@@ -2109,6 +2327,30 @@
                     return false;
                 }
 
+                // Hit mini-bosses
+                for (let i = miniBosses.length - 1; i >= 0; i--) {
+                    if (collide(b, miniBosses[i])) {
+                        miniBosses[i].hp -= b.damage;
+                        miniBosses[i].hit = 8;
+                        addFloat(miniBosses[i].x + 20, miniBosses[i].y, `-${b.damage}`);
+                        addParticles(miniBosses[i].x + 20, miniBosses[i].y + 20, '#ff6600', 4, 2, 15);
+
+                        if (miniBosses[i].hp <= 0) {
+                            gs.score += 25;
+                            gs.kills += 3;
+                            addFloat(miniBosses[i].x + 20, miniBosses[i].y, '+25 MINI-BOSS! 💀');
+                            addParticles(miniBosses[i].x + 20, miniBosses[i].y + 20, '#ff0000', 20, 3, 35);
+                            addParticles(miniBosses[i].x + 20, miniBosses[i].y + 20, '#ffaa00', 12, 2, 25);
+                            const deathCry = ZOMBIE_DEATHS[Math.floor(Math.random() * ZOMBIE_DEATHS.length)];
+                            addFloat(miniBosses[i].x + 20, miniBosses[i].y - 20, deathCry);
+                            miniBosses.splice(i, 1);
+                            updateUI();
+                            checkRoom();
+                        }
+                        return false;
+                    }
+                }
+
                 return b.x > -50 && b.x < WORLD.w + 50 && b.y > -50 && b.y < WORLD.h + 50;
             });
 
@@ -2142,19 +2384,33 @@
                 if (collide(boss, player)) showGameOver();
             }
 
-            // Items
+            // Items - Star = DEMONIC MODE for gorilla
             items = items.filter(item => {
                 drawStar(item.x, item.y, item.w, gs.pulse);
                 if (collide(item, player)) {
-                    gs.goriActive = true;
-                    gs.goriTimer = 500;
-                    gorilla.x = player.x - 30;
-                    gorilla.y = player.y - 40;
-                    showSpeech("LLEGÓ EL CHORO MÁS CHORO 🦍💪 WUOM");
+                    gs.satanic = true;
+                    gs.satTimer = 600; // ~10 seconds of rage
+                    gorilla.speed = 5;
+                    showSpeech("🔥👹 MODO SATÁNICO ACTIVADO CTMRE 👹🔥");
+                    addParticles(gorilla.x + 28, gorilla.y + 28, '#ff0000', 20, 3, 30);
+                    addParticles(gorilla.x + 28, gorilla.y + 28, '#ff6600', 15, 4, 25);
                     updateUI();
                     return false;
                 }
                 return true;
+            });
+
+            // Mini-bosses
+            miniBosses = miniBosses.filter(mb => {
+                mb.frame++;
+                const dx = player.x - mb.x;
+                const dy = player.y - mb.y;
+                const dist = Math.hypot(dx, dy);
+                mb.x += (dx / dist) * mb.speed;
+                mb.y += (dy / dist) * mb.speed;
+                drawMiniBoss(mb);
+                if (collide(mb, player)) { showGameOver(); return false; }
+                return mb.hp > 0;
             });
 
             updateGorilla();
@@ -2168,18 +2424,14 @@
             drawComboHUD();
             updateParticles();
 
-            // 🦍❤️ Gorilla piropo timer - random love phrases
-            if (gs.goriActive) {
-                gs.piropoTimer++;
-                if (gs.piropoTimer > 0 && gs.piropoTimer % 180 === 0 && Math.random() > 0.4) {
-                    showSpeech(GORILLA_PIROPOS[Math.floor(Math.random() * GORILLA_PIROPOS.length)]);
-                }
-                // Heart trail from gorilla
-                if (Math.random() > 0.85) {
-                    addParticles(gorilla.x + 28, gorilla.y - 10, '#ff69b4', 1, 0.5, 40);
-                }
-            } else {
-                gs.piropoTimer = 0;
+            // 🦍❤️ Gorilla piropo timer - random love phrases (always active now)
+            gs.piropoTimer++;
+            if (gs.piropoTimer > 0 && gs.piropoTimer % 240 === 0 && Math.random() > 0.5) {
+                showSpeech(GORILLA_PIROPOS[Math.floor(Math.random() * GORILLA_PIROPOS.length)]);
+            }
+            // Heart trail from gorilla (less frequent when not satanic)
+            if (Math.random() > (gs.satanic ? 0.7 : 0.92)) {
+                addParticles(gorilla.x + 28, gorilla.y - 10, gs.satanic ? '#ff4400' : '#ff69b4', 1, 0.5, 40);
             }
 
             drawScanlines();
@@ -2257,9 +2509,12 @@
         }
 
         // Spawners - MÁS ZOMBIS!
-        setInterval(spawnZombie, 700); // Era 1400, ahora el doble de zombis
+        setInterval(spawnZombie, 700);
         setInterval(spawnItem, 14000);
         setTimeout(spawnItem, 6000);
+        // Mini-boss spawner - every 25 seconds
+        setInterval(spawnMiniBoss, 25000);
+        setTimeout(spawnMiniBoss, 15000); // First one at 15s
 
         // 🎮 Konami Code Easter Egg Function
         function triggerKonamiEasterEgg() {
@@ -2311,13 +2566,13 @@
             overlay.onclick = () => { overlay.remove(); style.remove(); };
             document.body.appendChild(overlay);
             
-            // Bonus: activate gorilla for free!
-            if (!gs.goriActive && !gs.over && !gs.paused) {
-                gs.goriActive = true;
-                gs.goriTimer = 600;
-                gorilla.x = player.x + 40;
-                gorilla.y = player.y;
-                showSpeech("❤️ KONAMI CODE ACTIVADO ❤️ WUOM");
+            // Bonus: activate satanic mode!
+            if (!gs.satanic && !gs.over && !gs.paused) {
+                gs.satanic = true;
+                gs.satTimer = 600;
+                gorilla.speed = 5;
+                showSpeech("❤️ KONAMI CODE = MODO SATÁNICO ❤️ WUOM");
+                addParticles(gorilla.x + 28, gorilla.y + 28, '#ff0000', 20, 3, 30);
                 updateUI();
             }
         }
