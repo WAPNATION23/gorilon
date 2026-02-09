@@ -505,10 +505,10 @@
 
         // Weapons
         const WEAPONS = [
-            { name: 'PISTOLA', emoji: '🔫', fireRate: 200, spread: 0, pellets: 1, damage: 1, color: C.DARK },
-            { name: 'ESCOPETA', emoji: '💥', fireRate: 500, spread: 0.3, pellets: 5, damage: 1, color: '#8b4513' },
-            { name: 'MINIGUN', emoji: '🔥', fireRate: 80, spread: 0.15, pellets: 1, damage: 1, color: '#ff4500' },
-            { name: 'LANZALLAMAS', emoji: '🔥', fireRate: 50, spread: 0.4, pellets: 3, damage: 0.5, color: '#ff6600', isFlame: true }
+            { name: 'PISTOLA', emoji: '🔫', fireRate: 150, spread: 0, pellets: 1, damage: 1, color: C.DARK },
+            { name: 'ESCOPETA', emoji: '💥', fireRate: 400, spread: 0.35, pellets: 7, damage: 1, color: '#8b4513' },
+            { name: 'MINIGUN', emoji: '🔥', fireRate: 60, spread: 0.12, pellets: 1, damage: 1, color: '#ff4500' },
+            { name: 'LANZALLAMAS', emoji: '🔥', fireRate: 40, spread: 0.45, pellets: 4, damage: 0.5, color: '#ff6600', isFlame: true }
         ];
 
         // Poems
@@ -1106,98 +1106,98 @@
             ctx.restore();
         }
 
-        // === DRAW ZOMBIE (IMPROVED) ===
+        // === DRAW ZOMBIE (IMPROVED - BIGGER) ===
         function drawZombie(sx, sy, frame) {
             const x = sx - camera.x, y = sy - camera.y;
-            const wobble = Math.sin(frame * 0.15) * 2;
+            const wobble = Math.sin(frame * 0.15) * 3;
             const breathe = Math.sin(frame * 0.08) * 0.5;
+            const cx = 13; // center x offset
 
             ctx.save();
 
             // Shadow
             ctx.fillStyle = 'rgba(0,0,0,0.3)';
             ctx.beginPath();
-            ctx.ellipse(x + 8, y + 22, 8, 3, 0, 0, Math.PI * 2);
+            ctx.ellipse(x + cx, y + 30, 12, 4, 0, 0, Math.PI * 2);
             ctx.fill();
 
             // Legs
-            const legMove = Math.sin(frame * 0.12) * 2;
+            const legMove = Math.sin(frame * 0.12) * 3;
             ctx.fillStyle = '#1a3a1a';
-            ctx.fillRect(x + 4, y + 17, 3, 5 + legMove);
-            ctx.fillRect(x + 9, y + 17, 3, 5 - legMove);
+            ctx.fillRect(x + 6, y + 23, 5, 7 + legMove);
+            ctx.fillRect(x + 15, y + 23, 5, 7 - legMove);
 
             // Body (torn clothes)
             ctx.fillStyle = '#2a4a2a';
             ctx.beginPath();
-            ctx.ellipse(x + 8, y + 14 + breathe, 6, 5, 0, 0, Math.PI * 2);
+            ctx.ellipse(x + cx, y + 19 + breathe, 9, 7, 0, 0, Math.PI * 2);
             ctx.fill();
             // Torn cloth detail
             ctx.fillStyle = '#3a5a3a';
-            ctx.fillRect(x + 3, y + 12, 3, 4);
-            ctx.fillRect(x + 10, y + 13, 2, 3);
+            ctx.fillRect(x + 4, y + 16, 4, 6);
+            ctx.fillRect(x + 17, y + 17, 3, 5);
 
             // Arms (reaching out)
-            const arm = Math.sin(frame * 0.1) * 4;
+            const arm = Math.sin(frame * 0.1) * 5;
             ctx.fillStyle = '#306230';
             ctx.save();
-            ctx.translate(x + 2 + arm, y + 12);
+            ctx.translate(x + 3 + arm, y + 16);
             ctx.rotate(-0.4 + Math.sin(frame * 0.08) * 0.2);
-            ctx.fillRect(-1, 0, 3, 8);
-            // Fingers
-            ctx.fillRect(-2, 7, 2, 2);
-            ctx.fillRect(1, 7, 2, 2);
+            ctx.fillRect(-2, 0, 4, 11);
+            ctx.fillRect(-3, 10, 3, 3);
+            ctx.fillRect(1, 10, 3, 3);
             ctx.restore();
             ctx.save();
-            ctx.translate(x + 14 - arm, y + 12);
+            ctx.translate(x + 22 - arm, y + 16);
             ctx.rotate(0.4 - Math.sin(frame * 0.08) * 0.2);
-            ctx.fillRect(-1, 0, 3, 8);
-            ctx.fillRect(-2, 7, 2, 2);
-            ctx.fillRect(1, 7, 2, 2);
+            ctx.fillRect(-2, 0, 4, 11);
+            ctx.fillRect(-3, 10, 3, 3);
+            ctx.fillRect(1, 10, 3, 3);
             ctx.restore();
 
             // Head
-            const headGrad = ctx.createRadialGradient(x + 8 + wobble, y + 6, 1, x + 8 + wobble, y + 6, 8);
+            const headGrad = ctx.createRadialGradient(x + cx + wobble, y + 8, 1, x + cx + wobble, y + 8, 11);
             headGrad.addColorStop(0, '#3a6a3a');
             headGrad.addColorStop(1, '#1a3a1a');
             ctx.fillStyle = headGrad;
             ctx.beginPath();
-            ctx.arc(x + 8 + wobble, y + 6, 7, 0, Math.PI * 2);
+            ctx.arc(x + cx + wobble, y + 8, 10, 0, Math.PI * 2);
             ctx.fill();
             ctx.strokeStyle = '#0a2a0a';
-            ctx.lineWidth = 0.8;
+            ctx.lineWidth = 1;
             ctx.stroke();
 
             // Eyes (glowing)
             ctx.shadowColor = '#aaff00';
-            ctx.shadowBlur = 4;
+            ctx.shadowBlur = 5;
             ctx.fillStyle = '#ccff00';
             ctx.beginPath();
-            ctx.arc(x + 5 + wobble, y + 4, 1.8, 0, Math.PI * 2);
-            ctx.arc(x + 11 + wobble, y + 4, 1.8, 0, Math.PI * 2);
+            ctx.arc(x + 9 + wobble, y + 6, 2.5, 0, Math.PI * 2);
+            ctx.arc(x + 17 + wobble, y + 6, 2.5, 0, Math.PI * 2);
             ctx.fill();
             ctx.shadowBlur = 0;
             // Pupils
             ctx.fillStyle = '#000';
             ctx.beginPath();
-            ctx.arc(x + 5 + wobble, y + 4, 0.8, 0, Math.PI * 2);
-            ctx.arc(x + 11 + wobble, y + 4, 0.8, 0, Math.PI * 2);
+            ctx.arc(x + 9 + wobble, y + 6, 1.2, 0, Math.PI * 2);
+            ctx.arc(x + 17 + wobble, y + 6, 1.2, 0, Math.PI * 2);
             ctx.fill();
 
             // Mouth (drooling)
             ctx.fillStyle = '#0a1a0a';
             ctx.beginPath();
-            ctx.ellipse(x + 8 + wobble, y + 9, 3, 2, 0, 0, Math.PI);
+            ctx.ellipse(x + cx + wobble, y + 13, 4, 3, 0, 0, Math.PI);
             ctx.fill();
             // Drool
             ctx.fillStyle = 'rgba(100, 200, 80, 0.6)';
-            ctx.fillRect(x + 7 + wobble, y + 10, 2, 3 + Math.sin(frame * 0.1) * 2);
+            ctx.fillRect(x + 12 + wobble, y + 14, 3, 4 + Math.sin(frame * 0.1) * 2);
 
             // Wound marks
             ctx.strokeStyle = '#4a0a0a';
-            ctx.lineWidth = 1;
+            ctx.lineWidth = 1.2;
             ctx.beginPath();
-            ctx.moveTo(x + 3 + wobble, y + 2);
-            ctx.lineTo(x + 6 + wobble, y + 5);
+            ctx.moveTo(x + 5 + wobble, y + 3);
+            ctx.lineTo(x + 9 + wobble, y + 7);
             ctx.stroke();
 
             ctx.restore();
@@ -1777,7 +1777,7 @@
             const x = bx === 0 || bx === WORLD.w + 30 ? bx : 50 + Math.random() * (WORLD.w - 100);
             const y = by === WORLD.h / 2 ? 50 + Math.random() * (WORLD.h - 100) : by;
 
-            zombies.push({ x, y, w: 16, h: 18, speed: 0.4 + Math.random() * 0.3 + gs.room * 0.03, frame: Math.random() * 100 });
+            zombies.push({ x, y, w: 26, h: 28, speed: 0.4 + Math.random() * 0.3 + gs.room * 0.03, frame: Math.random() * 100 });
         }
 
         function spawnItem() {
@@ -1795,22 +1795,43 @@
             if (now - lastFire < w.fireRate) return;
             lastFire = now;
 
+            // Auto-aim: nudge aim toward nearest zombie
+            let aimAngle = player.aim;
+            let nearDist = 300;
+            const allTargets = boss ? [...zombies, boss] : zombies;
+            for (const z of allTargets) {
+                const dx = (z.x + z.w / 2) - (player.x + player.w / 2);
+                const dy = (z.y + z.h / 2) - (player.y + player.h / 2);
+                const d = Math.hypot(dx, dy);
+                if (d < nearDist) {
+                    const zAngle = Math.atan2(dy, dx);
+                    // Only assist if zombie is roughly in aim direction (within 45 deg)
+                    let diff = zAngle - player.aim;
+                    while (diff > Math.PI) diff -= Math.PI * 2;
+                    while (diff < -Math.PI) diff += Math.PI * 2;
+                    if (Math.abs(diff) < 0.8) {
+                        aimAngle = player.aim + diff * 0.4; // 40% correction
+                        nearDist = d;
+                    }
+                }
+            }
+
             for (let i = 0; i < w.pellets; i++) {
                 const spread = (Math.random() - 0.5) * w.spread * 2;
-                const angle = player.aim + spread;
+                const angle = aimAngle + spread;
                 const speed = w.isFlame ? 5 : 9;
 
                 bullets.push({
-                    x: player.x + player.w / 2 - 3,
-                    y: player.y + player.h / 2 - 3,
-                    w: w.isFlame ? 10 : 6,
-                    h: w.isFlame ? 10 : 6,
+                    x: player.x + player.w / 2 - 4,
+                    y: player.y + player.h / 2 - 4,
+                    w: w.isFlame ? 14 : 10,
+                    h: w.isFlame ? 14 : 10,
                     vx: Math.cos(angle) * speed,
                     vy: Math.sin(angle) * speed,
                     damage: w.damage,
                     color: w.color,
                     isFlame: w.isFlame,
-                    life: w.isFlame ? 30 : 999
+                    life: w.isFlame ? 40 : 999
                 });
             }
         }
