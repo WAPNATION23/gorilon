@@ -408,35 +408,72 @@
         // UI Elements
         const $ = id => document.getElementById(id);
 
-        // === MUSIC SYSTEM (Native Audio API) ===
-        // This is the most reliable method for mobile:
-        // 1. Create Audio object
-        // 2. Play() inside a direct touch event (Start Button)
+        // === MUSIC SYSTEM (YouTube IFrame API - Most Reliable) ===
         const musicBtn = $('musicBtn');
-        const MUSIC_URL = 'https://archive.org/download/VideoGamesLanaDelRey/Lana%20Del%20Rey%20-%20Video%20Games.mp3';
-        let bgMusic = new Audio(MUSIC_URL);
-        bgMusic.loop = true;
-        bgMusic.volume = 0.5;
         let musicPlaying = false;
+        let ytPlayer = null;
+        let ytReady = false;
+
+        // Load YouTube IFrame API
+        const ytScript = document.createElement('script');
+        ytScript.src = 'https://www.youtube.com/iframe_api';
+        document.head.appendChild(ytScript);
+
+        // YouTube API calls this automatically when ready
+        window.onYouTubeIframeAPIReady = function () {
+            // Create hidden container for YT player
+            const ytDiv = document.createElement('div');
+            ytDiv.id = 'ytplayer';
+            ytDiv.style.cssText = 'position:absolute;width:1px;height:1px;overflow:hidden;opacity:0;pointer-events:none;';
+            document.body.appendChild(ytDiv);
+
+            ytPlayer = new YT.Player('ytplayer', {
+                height: '1',
+                width: '1',
+                videoId: 'cE6wxDqdOV0', // Lana Del Rey - Video Games
+                playerVars: {
+                    autoplay: 0,
+                    loop: 1,
+                    playlist: 'cE6wxDqdOV0', // needed for loop
+                    controls: 0,
+                    disablekb: 1,
+                    fs: 0,
+                    modestbranding: 1,
+                    rel: 0
+                },
+                events: {
+                    onReady: function () {
+                        ytReady = true;
+                        ytPlayer.setVolume(50);
+                        console.log('🎵 YouTube player ready');
+                    },
+                    onStateChange: function (e) {
+                        // If video ends, replay (backup for loop)
+                        if (e.data === YT.PlayerState.ENDED) {
+                            ytPlayer.playVideo();
+                        }
+                    }
+                }
+            });
+        };
 
         function tryPlayMusic() {
-            // Force play on interaction
-            bgMusic.play().then(() => {
+            if (ytReady && ytPlayer && !musicPlaying) {
+                ytPlayer.playVideo();
                 musicPlaying = true;
                 musicBtn.textContent = '🎵';
                 musicBtn.classList.remove('muted');
-            }).catch(e => {
-                console.log("Audio waiting for interaction...");
-            });
+            }
         }
 
         function toggleMusic() {
+            if (!ytReady || !ytPlayer) return;
             if (musicPlaying) {
-                bgMusic.pause();
+                ytPlayer.pauseVideo();
                 musicBtn.textContent = '🔇';
                 musicBtn.classList.add('muted');
             } else {
-                bgMusic.play();
+                ytPlayer.playVideo();
                 musicBtn.textContent = '🎵';
                 musicBtn.classList.remove('muted');
             }
