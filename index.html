@@ -1,0 +1,1301 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>ZombiGotchi: Protocolo Gorilón v2.0</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            touch-action: none;
+            -webkit-user-select: none;
+            user-select: none;
+        }
+
+        body {
+            background: #1a1a2e;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            overflow: hidden;
+            font-family: 'Courier New', monospace;
+        }
+
+        #gameContainer {
+            position: relative;
+            width: 100vw;
+            height: 100vh;
+            max-width: 800px;
+            max-height: 600px;
+            background-color: #9bbc0f;
+            border: 8px solid #0f380f;
+            border-radius: 12px;
+            box-shadow: 0 0 40px rgba(155, 188, 15, 0.3);
+            overflow: hidden;
+        }
+
+        #gameCanvas {
+            display: block;
+            width: 100%;
+            height: 100%;
+            image-rendering: pixelated;
+        }
+
+        #ui {
+            position: absolute;
+            top: 8px;
+            left: 12px;
+            right: 12px;
+            color: #0f380f;
+            font-weight: bold;
+            font-size: 14px;
+            display: flex;
+            justify-content: space-between;
+            pointer-events: none;
+            z-index: 10;
+        }
+
+        #weaponUI {
+            position: absolute;
+            top: 30px;
+            left: 12px;
+            color: #0f380f;
+            font-size: 12px;
+            z-index: 10;
+        }
+
+        #goriStatus.active {
+            animation: pulse 0.3s infinite alternate;
+        }
+
+        #goriStatus.satanic {
+            color: #ff0000 !important;
+            text-shadow: 0 0 10px #ff0000;
+        }
+
+        @keyframes pulse {
+            from {
+                opacity: 0.7;
+            }
+
+            to {
+                opacity: 1;
+            }
+        }
+
+        #joystickContainer {
+            position: absolute;
+            bottom: 30px;
+            left: 30px;
+            width: 130px;
+            height: 130px;
+            z-index: 100;
+        }
+
+        #joystickBase {
+            width: 130px;
+            height: 130px;
+            background: radial-gradient(circle at 30% 30%, #4a4a4a 0%, #1a1a1a 100%);
+            border: 4px solid #0f380f;
+            border-radius: 50%;
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.5);
+        }
+
+        #joystickStick {
+            position: absolute;
+            width: 60px;
+            height: 60px;
+            background: radial-gradient(circle at 35% 35%, #666 0%, #1a1a1a 100%);
+            border: 3px solid #0f380f;
+            border-radius: 50%;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+        }
+
+        #fireButton {
+            position: absolute;
+            bottom: 30px;
+            right: 30px;
+            width: 110px;
+            height: 110px;
+            background: radial-gradient(circle at 35% 35%, #8bac0f 0%, #0f380f 100%);
+            border: 5px solid #0f380f;
+            border-radius: 50%;
+            box-shadow: 0 8px 0 #0a2a0a;
+            z-index: 100;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 40px;
+        }
+
+        #fireButton:active {
+            transform: translateY(6px);
+            box-shadow: 0 2px 0 #0a2a0a;
+        }
+
+        #weaponSwitch {
+            position: absolute;
+            bottom: 150px;
+            right: 40px;
+            width: 80px;
+            height: 40px;
+            background: #306230;
+            border: 3px solid #0f380f;
+            border-radius: 8px;
+            color: #9bbc0f;
+            font-weight: bold;
+            font-size: 11px;
+            z-index: 100;
+        }
+
+        #levelIntro,
+        #gameOverScreen,
+        #victoryScreen {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: none;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 200;
+            text-align: center;
+            padding: 20px;
+        }
+
+        #levelIntro {
+            background: rgba(15, 56, 15, 0.97);
+        }
+
+        #gameOverScreen {
+            background: rgba(15, 56, 15, 0.95);
+        }
+
+        #victoryScreen {
+            background: linear-gradient(135deg, #ff6b9d 0%, #ff3366 100%);
+            overflow: hidden;
+        }
+
+        #levelIntro h2,
+        #gameOverScreen h1 {
+            color: #9bbc0f;
+            font-size: 26px;
+            margin-bottom: 15px;
+        }
+
+        #poemText {
+            color: #8bac0f;
+            font-size: 14px;
+            line-height: 1.6;
+            max-width: 380px;
+            margin-bottom: 20px;
+            font-style: italic;
+        }
+
+        .gameBtn {
+            padding: 14px 35px;
+            font-size: 16px;
+            font-family: 'Courier New', monospace;
+            font-weight: bold;
+            background: #9bbc0f;
+            color: #0f380f;
+            border: 4px solid #306230;
+            border-radius: 10px;
+            cursor: pointer;
+            box-shadow: 0 5px 0 #306230;
+        }
+
+        .gameBtn:active {
+            transform: translateY(3px);
+            box-shadow: 0 2px 0 #306230;
+        }
+
+        #gorillaSpeech {
+            position: absolute;
+            background: #fff;
+            color: #0f380f;
+            padding: 6px 10px;
+            border-radius: 10px;
+            font-size: 11px;
+            font-weight: bold;
+            max-width: 160px;
+            text-align: center;
+            display: none;
+            z-index: 50;
+            pointer-events: none;
+        }
+
+        #victoryScreen h1 {
+            font-size: 36px;
+            color: #fff;
+            margin-bottom: 15px;
+        }
+
+        #victoryScreen p {
+            color: #fff;
+            font-size: 18px;
+            margin-bottom: 20px;
+        }
+
+        .love-explosion {
+            position: absolute;
+            font-size: 24px;
+            animation: floatUp 3s ease-out forwards;
+            pointer-events: none;
+        }
+
+        @keyframes floatUp {
+            0% {
+                opacity: 1;
+                transform: translateY(0) scale(1);
+            }
+
+            100% {
+                opacity: 0;
+                transform: translateY(-350px) scale(1.3);
+            }
+        }
+
+        .te-quiero {
+            position: absolute;
+            color: #fff;
+            font-weight: bold;
+            font-size: 16px;
+            text-shadow: 2px 2px 0 #ff1a75;
+            animation: teQuieroFloat 3s ease-out forwards;
+            pointer-events: none;
+        }
+
+        @keyframes teQuieroFloat {
+            0% {
+                opacity: 1;
+                transform: scale(0.5);
+            }
+
+            50% {
+                opacity: 1;
+                transform: scale(1.1);
+            }
+
+            100% {
+                opacity: 0;
+                transform: translateY(-250px) scale(0.7);
+            }
+        }
+
+        #bossHealth {
+            position: absolute;
+            top: 50px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 200px;
+            height: 16px;
+            background: #0f380f;
+            border: 2px solid #fff;
+            border-radius: 4px;
+            display: none;
+            z-index: 20;
+        }
+
+        #bossHealthBar {
+            height: 100%;
+            background: linear-gradient(90deg, #ff0000, #ff6600);
+            border-radius: 2px;
+            transition: width 0.2s;
+        }
+
+        #bossLabel {
+            position: absolute;
+            top: 34px;
+            left: 50%;
+            transform: translateX(-50%);
+            color: #ff0000;
+            font-weight: bold;
+            font-size: 12px;
+            display: none;
+            z-index: 20;
+            text-shadow: 1px 1px 0 #000;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="gameContainer">
+        <div id="ui">
+            <span>SCORE: <span id="scoreDisplay">0</span></span>
+            <span id="roomIndicator">1/7</span>
+            <span>🦍 <span id="goriStatus">OFF</span></span>
+        </div>
+        <div id="weaponUI">🔫 <span id="weaponName">PISTOLA</span></div>
+        <div id="bossLabel">☠️ ZOMBIE BOSS ☠️</div>
+        <div id="bossHealth">
+            <div id="bossHealthBar" style="width:100%"></div>
+        </div>
+        <canvas id="gameCanvas"></canvas>
+        <div id="gorillaSpeech"></div>
+        <div id="joystickContainer">
+            <div id="joystickBase">
+                <div id="joystickStick"></div>
+            </div>
+        </div>
+        <button id="weaponSwitch">ARMA ➡️</button>
+        <div id="fireButton">🔥</div>
+        <div id="levelIntro">
+            <h2 id="levelTitle">🏠 HABITACIÓN 1</h2>
+            <p id="poemText"></p><button class="gameBtn" id="startLevelBtn">▶ COMENZAR</button>
+        </div>
+        <div id="gameOverScreen">
+            <h1>☠️ GAME OVER ☠️</h1>
+            <p id="gameOverMessage"></p><button class="gameBtn" id="restartButton">🔄 REINTENTAR</button>
+            <p id="finalScore"></p>
+        </div>
+        <div id="victoryScreen">
+            <div id="victoryContent">
+                <h1>🏆 ¡GANASTE! 🏆</h1>
+                <p>¡Completaste las 7 habitaciones!</p>
+                <p id="victoryScore"></p><button class="gameBtn" id="playAgainBtn">💕 JUGAR DE NUEVO</button>
+            </div>
+        </div>
+    </div>
+    <script>
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        const container = document.getElementById('gameContainer');
+        const MAX_ROOMS = 7;
+
+        // Resize
+        function resizeCanvas() {
+            const rect = container.getBoundingClientRect();
+            canvas.width = rect.width - 16;
+            canvas.height = rect.height - 16;
+        }
+        resizeCanvas();
+        window.addEventListener('resize', resizeCanvas);
+
+        // UI Elements
+        const $ = id => document.getElementById(id);
+        const scoreDisplay = $('scoreDisplay');
+        const goriStatusEl = $('goriStatus');
+        const roomIndicator = $('roomIndicator');
+        const weaponName = $('weaponName');
+        const gameOverScreen = $('gameOverScreen');
+        const gameOverMessage = $('gameOverMessage');
+        const finalScore = $('finalScore');
+        const levelIntro = $('levelIntro');
+        const levelTitle = $('levelTitle');
+        const poemText = $('poemText');
+        const victoryScreen = $('victoryScreen');
+        const victoryScore = $('victoryScore');
+        const joystickStick = $('joystickStick');
+        const gorillaSpeech = $('gorillaSpeech');
+        const bossHealthEl = $('bossHealth');
+        const bossHealthBar = $('bossHealthBar');
+        const bossLabel = $('bossLabel');
+
+        // Colors
+        const C = { DARK: '#0f380f', MID: '#306230', LIGHT: '#8bac0f', BG: '#9bbc0f', PINK: '#ffb6c1', HOTPINK: '#ff69b4' };
+
+        // Weapons
+        const WEAPONS = [
+            { name: 'PISTOLA', emoji: '🔫', fireRate: 200, spread: 0, pellets: 1, damage: 1, color: C.DARK },
+            { name: 'ESCOPETA', emoji: '💥', fireRate: 500, spread: 0.3, pellets: 5, damage: 1, color: '#8b4513' },
+            { name: 'MINIGUN', emoji: '🔥', fireRate: 80, spread: 0.15, pellets: 1, damage: 1, color: '#ff4500' },
+            { name: 'LANZALLAMAS', emoji: '🔥', fireRate: 50, spread: 0.4, pellets: 3, damage: 0.5, color: '#ff6600', isFlame: true }
+        ];
+
+        // Poems
+        const POEMS = [
+            "🎀 Hello Kitty entra al campo de batalla,\nCon su lazo rosa y valor sin igual.\n¡Los zombis tiemblan ante tanta maravilla!",
+            "🌙 Segunda morada, el peligro crece,\nPero Hello Kitty nunca retrocede.\n¡Adelante, guerrera de rosa y blanco!",
+            "⚔️ Tres victorias, tres lazos de honor,\nEl Gorilón ruge con fervor.\n¡Nadie detiene a esta dupla ganadora!",
+            "🔥 Cuatro batallas, el fuego arde,\nHello Kitty no conoce lo cobarde.\n¡Los zombis huyen de su mirada!",
+            "🦍 El Gorilón susurra con amor:\n\"¡Esta gatita es mi señora!\"\n¡Juntos son invencibles!",
+            "💫 Casi llegas al final glorioso,\nEl camino ha sido victorioso.\n¡Una habitación más, campeona!",
+            "👑 LA BATALLA FINAL TE ESPERA\nEl Boss Zombi quiere pelea,\nPero Hello Kitty es la verdadera\n¡REINA DEL APOCALIPSIS!"
+        ];
+
+        const GORILLA_PHRASES = ["¡ALÉJENSE DE MI SEÑORA! 🦍", "¡SALGAN, SABANDIJAS!", "¡NADIE TOCA A HELLO KITTY!", "¡PA' FUERA, BICHOS!", "¡SOY SU GUARDIÁN!", "¡MUERE, ZOMBI!", "¡POR MI GATITA!", "¡OTRO PA'L HOYO!", "¡EL GORILÓN NO PERDONA!", "¡FUERA DE AQUÍ!"];
+        const GAME_OVER_MSG = ["¿Llamada de odio? 📞", "El Gorilón llora 🦍💔", "Los zombis ganaron 🎉", "¡Vuelve más fuerte! 💪"];
+
+        // World size (expandable map)
+        const WORLD = { w: 1200, h: 900 };
+
+        // State
+        let gs = {};
+        let player = {};
+        let camera = { x: 0, y: 0 };
+        let bullets = [];
+        let zombies = [];
+        let items = [];
+        let obstacles = [];
+        let gorilla = {};
+        let boss = null;
+        let joystick = { active: false, baseX: 0, baseY: 0, maxDist: 30 };
+        let loveInterval = null;
+        let checkpoint = 1; // Guardar el nivel actual como checkpoint
+
+        function init() {
+            if (loveInterval) clearInterval(loveInterval);
+            document.querySelectorAll('.love-explosion,.te-quiero').forEach(e => e.remove());
+
+            gs = { score: 0, room: checkpoint, kills: 0, toKill: 12 + checkpoint * 2, over: false, won: false, paused: true, goriActive: false, goriTimer: 0, goriSpeechTimer: 0, pulse: 0, floats: [], weapon: 0, satanic: false };
+            player = { x: WORLD.w / 2 - 16, y: WORLD.h / 2 - 16, w: 32, h: 32, speed: 3.5, dx: 0, dy: 0, frame: 0, aim: 0 };
+            gorilla = { x: -200, y: -200, w: 56, h: 56, speed: 3, target: null, punch: 0, walk: 0 };
+            boss = null;
+            bullets = []; zombies = []; items = [];
+            genObstacles();
+            updateUI();
+            gameOverScreen.style.display = 'none';
+            victoryScreen.style.display = 'none';
+            bossHealthEl.style.display = 'none';
+            bossLabel.style.display = 'none';
+            showIntro();
+        }
+
+        function showIntro() {
+            gs.paused = true;
+            levelTitle.innerText = `🏠 HABITACIÓN ${gs.room}/${MAX_ROOMS}`;
+            poemText.innerText = POEMS[gs.room - 1];
+            levelIntro.style.display = 'flex';
+        }
+
+        function startLevel() {
+            levelIntro.style.display = 'none';
+            gs.paused = false;
+
+            // Spawn boss on room 4 and 7
+            if (gs.room === 4 || gs.room === 7) {
+                spawnBoss();
+            }
+        }
+
+        function spawnBoss() {
+            boss = {
+                x: WORLD.w / 2 - 40,
+                y: 100,
+                w: 80, h: 80,
+                hp: 50 + gs.room * 10,
+                maxHp: 50 + gs.room * 10,
+                speed: 1.2,
+                frame: 0,
+                hit: 0
+            };
+            bossHealthEl.style.display = 'block';
+            bossLabel.style.display = 'block';
+        }
+
+        $('startLevelBtn').onclick = startLevel;
+        $('startLevelBtn').ontouchend = e => { e.preventDefault(); startLevel(); };
+
+        function showVictory() {
+            gs.won = true;
+            gs.paused = true;
+            victoryScore.innerText = `Puntuación: ${gs.score} 🌟`;
+            victoryScreen.style.display = 'flex';
+            startLoveExplosion();
+        }
+
+        function startLoveExplosion() {
+            const hearts = ['❤️', '💕', '💖', '💗', '🦍', '✨', '🎀', '🌟'];
+            const texts = ['TE QUIERO', 'TE AMO', 'CONY ❤️', 'ERES LA MEJOR', 'GANASTE', '🦍💕', 'CAMPEONA', 'HELLO KITTY'];
+            let count = 0;
+
+            function create() {
+                if (count++ > 80) { clearInterval(loveInterval); return; }
+                const h = document.createElement('div');
+                h.className = 'love-explosion';
+                h.innerText = hearts[Math.floor(Math.random() * hearts.length)];
+                h.style.left = Math.random() * 100 + '%';
+                h.style.top = (75 + Math.random() * 25) + '%';
+                h.style.fontSize = (18 + Math.random() * 25) + 'px';
+                victoryScreen.appendChild(h);
+                setTimeout(() => h.remove(), 3500);
+
+                if (Math.random() > 0.4) {
+                    const t = document.createElement('div');
+                    t.className = 'te-quiero';
+                    t.innerText = texts[Math.floor(Math.random() * texts.length)];
+                    t.style.left = (10 + Math.random() * 80) + '%';
+                    t.style.top = (70 + Math.random() * 30) + '%';
+                    victoryScreen.appendChild(t);
+                    setTimeout(() => t.remove(), 3500);
+                }
+            }
+            for (let i = 0; i < 15; i++) setTimeout(create, i * 40);
+            loveInterval = setInterval(create, 90);
+        }
+
+        $('playAgainBtn').onclick = init;
+        $('restartButton').onclick = init;
+
+        function genObstacles() {
+            obstacles = [];
+            const n = 4 + gs.room;
+            for (let i = 0; i < n; i++) {
+                let x, y, ok = false, att = 0;
+                while (!ok && att++ < 40) {
+                    x = 80 + Math.random() * (WORLD.w - 200);
+                    y = 80 + Math.random() * (WORLD.h - 200);
+                    const d = Math.hypot(x - WORLD.w / 2, y - WORLD.h / 2);
+                    if (d > 120) ok = true;
+                }
+                if (ok) obstacles.push({ x, y, w: 50 + Math.random() * 40, h: 50 + Math.random() * 40 });
+            }
+        }
+
+        function updateUI() {
+            scoreDisplay.innerText = gs.score;
+            roomIndicator.innerText = `${gs.room}/${MAX_ROOMS}`;
+            const w = WEAPONS[gs.weapon];
+            weaponName.innerText = `${w.emoji} ${w.name}`;
+            goriStatusEl.innerText = gs.goriActive ? (gs.satanic ? '¡SATÁNICO!' : 'ACTIVO!') : 'OFF';
+            goriStatusEl.classList.toggle('active', gs.goriActive);
+            goriStatusEl.classList.toggle('satanic', gs.satanic);
+        }
+
+        // Switch weapon
+        $('weaponSwitch').onclick = () => { gs.weapon = (gs.weapon + 1) % WEAPONS.length; updateUI(); };
+        $('weaponSwitch').ontouchend = e => { e.preventDefault(); gs.weapon = (gs.weapon + 1) % WEAPONS.length; updateUI(); };
+
+        // === DRAW HELLO KITTY ===
+        function drawHelloKitty(sx, sy, frame, angle) {
+            const x = sx - camera.x, y = sy - camera.y;
+            ctx.save();
+            ctx.translate(x + 16, y + 16);
+            ctx.rotate(angle);
+
+            // Face (white circle)
+            ctx.fillStyle = '#fff';
+            ctx.beginPath();
+            ctx.ellipse(0, 0, 14, 12, 0, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.strokeStyle = '#000';
+            ctx.lineWidth = 1.5;
+            ctx.stroke();
+
+            // Ears
+            ctx.fillStyle = '#fff';
+            ctx.beginPath();
+            ctx.moveTo(-10, -8);
+            ctx.lineTo(-14, -18);
+            ctx.lineTo(-4, -12);
+            ctx.fill();
+            ctx.stroke();
+            ctx.beginPath();
+            ctx.moveTo(10, -8);
+            ctx.lineTo(14, -18);
+            ctx.lineTo(4, -12);
+            ctx.fill();
+            ctx.stroke();
+
+            // Bow (pink)
+            ctx.fillStyle = C.HOTPINK;
+            ctx.beginPath();
+            ctx.ellipse(-12, -14, 6, 4, -0.3, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.beginPath();
+            ctx.ellipse(-6, -16, 5, 3, 0.3, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.fillStyle = '#ff1493';
+            ctx.beginPath();
+            ctx.arc(-9, -15, 2, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Eyes
+            ctx.fillStyle = '#000';
+            ctx.beginPath();
+            ctx.ellipse(-5, -2, 2, 3, 0, 0, Math.PI * 2);
+            ctx.ellipse(5, -2, 2, 3, 0, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Nose
+            ctx.fillStyle = '#ffcc00';
+            ctx.beginPath();
+            ctx.ellipse(0, 3, 2.5, 2, 0, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Whiskers
+            ctx.strokeStyle = '#000';
+            ctx.lineWidth = 1;
+            ctx.beginPath();
+            ctx.moveTo(-14, 0); ctx.lineTo(-6, 2);
+            ctx.moveTo(-14, 4); ctx.lineTo(-6, 4);
+            ctx.moveTo(-14, 8); ctx.lineTo(-6, 6);
+            ctx.moveTo(14, 0); ctx.lineTo(6, 2);
+            ctx.moveTo(14, 4); ctx.lineTo(6, 4);
+            ctx.moveTo(14, 8); ctx.lineTo(6, 6);
+            ctx.stroke();
+
+            // Body
+            ctx.fillStyle = C.PINK;
+            ctx.fillRect(-8, 12, 16, 12);
+
+            // Weapon indicator
+            ctx.fillStyle = WEAPONS[gs.weapon].color;
+            ctx.fillRect(10, 5, 8, 4);
+
+            ctx.restore();
+        }
+
+        // === DRAW GORILLA (Satanic mode when fighting boss) ===
+        function drawGorilla(sx, sy, punch, walk) {
+            const x = sx - camera.x, y = sy - camera.y;
+            const p = punch > 0;
+            const shake = p ? Math.sin(punch * 3) * 5 : 0;
+            const bounce = Math.sin(walk * 0.15) * 2;
+
+            ctx.save();
+            ctx.translate(x + 28, y + 28);
+
+            // Body
+            ctx.fillStyle = gs.satanic ? '#1a0000' : '#2a1a0a';
+            ctx.beginPath();
+            ctx.ellipse(shake, 10 + bounce, 24, 22, 0, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Head
+            ctx.beginPath();
+            ctx.ellipse(shake, -14 + bounce, 16, 14, 0, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Face
+            ctx.fillStyle = gs.satanic ? '#4a2020' : '#6a5a4a';
+            ctx.beginPath();
+            ctx.ellipse(shake, -10 + bounce, 10, 8, 0, 0, Math.PI * 2);
+            ctx.fill();
+
+            // SATANIC EYES
+            if (gs.satanic) {
+                // Glowing red eyes
+                ctx.shadowColor = '#ff0000';
+                ctx.shadowBlur = 15;
+                ctx.fillStyle = '#ff0000';
+                ctx.beginPath();
+                ctx.arc(-6 + shake, -15 + bounce, 4, 0, Math.PI * 2);
+                ctx.arc(6 + shake, -15 + bounce, 4, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.shadowBlur = 0;
+
+                // Horns!
+                ctx.fillStyle = '#660000';
+                ctx.beginPath();
+                ctx.moveTo(-12 + shake, -22 + bounce);
+                ctx.lineTo(-8 + shake, -35 + bounce);
+                ctx.lineTo(-4 + shake, -22 + bounce);
+                ctx.fill();
+                ctx.beginPath();
+                ctx.moveTo(12 + shake, -22 + bounce);
+                ctx.lineTo(8 + shake, -35 + bounce);
+                ctx.lineTo(4 + shake, -22 + bounce);
+                ctx.fill();
+            } else {
+                ctx.fillStyle = p ? '#ff3333' : '#fff';
+                ctx.beginPath();
+                ctx.arc(-6 + shake, -15 + bounce, 3, 0, Math.PI * 2);
+                ctx.arc(6 + shake, -15 + bounce, 3, 0, Math.PI * 2);
+                ctx.fill();
+            }
+
+            // Pupils
+            ctx.fillStyle = '#000';
+            ctx.beginPath();
+            ctx.arc(-6 + shake, -15 + bounce, 1.5, 0, Math.PI * 2);
+            ctx.arc(6 + shake, -15 + bounce, 1.5, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Mouth when punching
+            if (p) {
+                ctx.fillStyle = gs.satanic ? '#ff0000' : '#330000';
+                ctx.beginPath();
+                ctx.ellipse(shake, -4 + bounce, 6, 5, 0, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.fillStyle = '#fff';
+                ctx.fillRect(-4 + shake, -6 + bounce, 8, 3);
+            }
+
+            // Arms
+            const armExt = p ? 18 : 0;
+            const armY = p ? -8 : 6;
+            ctx.fillStyle = gs.satanic ? '#1a0000' : '#2a1a0a';
+            ctx.beginPath();
+            ctx.ellipse(-26 - armExt + shake, armY + bounce, 12, 9, 0, 0, Math.PI * 2);
+            ctx.arc(-36 - armExt + shake, armY + bounce, 7, 0, Math.PI * 2);
+            ctx.ellipse(26 + armExt + shake, armY + bounce, 12, 9, 0, 0, Math.PI * 2);
+            ctx.arc(36 + armExt + shake, armY + bounce, 7, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Fire aura when satanic
+            if (gs.satanic && Math.random() > 0.5) {
+                ctx.fillStyle = `rgba(255, ${Math.random() * 100}, 0, 0.6)`;
+                ctx.beginPath();
+                ctx.arc(shake + (Math.random() - 0.5) * 40, bounce + (Math.random() - 0.5) * 40, 5 + Math.random() * 8, 0, Math.PI * 2);
+                ctx.fill();
+            }
+
+            ctx.restore();
+        }
+
+        // === DRAW ZOMBIE ===
+        function drawZombie(sx, sy, frame) {
+            const x = sx - camera.x, y = sy - camera.y;
+            const wobble = Math.sin(frame * 0.15) * 2;
+
+            ctx.fillStyle = C.MID;
+            ctx.beginPath();
+            ctx.arc(x + 8 + wobble, y + 6, 7, 0, Math.PI * 2);
+            ctx.fill();
+
+            ctx.fillStyle = C.BG;
+            ctx.fillRect(x + 5 + wobble, y + 3, 2, 2);
+            ctx.fillRect(x + 9 + wobble, y + 3, 2, 2);
+
+            ctx.fillStyle = C.MID;
+            ctx.fillRect(x + 4, y + 12, 8, 7);
+
+            const arm = Math.sin(frame * 0.1) * 3;
+            ctx.fillRect(x - 2 + arm, y + 10, 5, 3);
+            ctx.fillRect(x + 13 - arm, y + 10, 5, 3);
+        }
+
+        // === DRAW BOSS ===
+        function drawBoss(b) {
+            const x = b.x - camera.x, y = b.y - camera.y;
+            const shake = b.hit > 0 ? Math.sin(b.hit * 5) * 5 : 0;
+            b.frame++;
+
+            // Big zombie body
+            ctx.fillStyle = '#1a3a1a';
+            ctx.beginPath();
+            ctx.ellipse(x + 40 + shake, y + 50, 35, 40, 0, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Head
+            ctx.beginPath();
+            ctx.arc(x + 40 + shake, y + 15, 25, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Glowing eyes
+            ctx.shadowColor = '#ff0000';
+            ctx.shadowBlur = 10;
+            ctx.fillStyle = '#ff0000';
+            ctx.beginPath();
+            ctx.arc(x + 30 + shake, y + 10, 5, 0, Math.PI * 2);
+            ctx.arc(x + 50 + shake, y + 10, 5, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.shadowBlur = 0;
+
+            // Mouth
+            ctx.fillStyle = '#0a0a0a';
+            ctx.fillRect(x + 25 + shake, y + 25, 30, 10);
+            ctx.fillStyle = '#fff';
+            for (let i = 0; i < 5; i++) {
+                ctx.fillRect(x + 28 + i * 6 + shake, y + 26, 3, 8);
+            }
+
+            // Arms
+            const armWave = Math.sin(b.frame * 0.08) * 8;
+            ctx.fillStyle = '#1a3a1a';
+            ctx.fillRect(x - 15 + armWave, y + 30, 20, 12);
+            ctx.fillRect(x + 75 - armWave, y + 30, 20, 12);
+
+            // Health bar
+            bossHealthBar.style.width = (b.hp / b.maxHp * 100) + '%';
+        }
+
+        // === DRAW OBSTACLES ===
+        function drawObstacles() {
+            obstacles.forEach(o => {
+                const x = o.x - camera.x, y = o.y - camera.y;
+                if (x > -100 && x < canvas.width + 100 && y > -100 && y < canvas.height + 100) {
+                    ctx.fillStyle = 'rgba(0,0,0,0.15)';
+                    ctx.fillRect(x + 4, y + 4, o.w, o.h);
+                    ctx.fillStyle = '#1a4a1a';
+                    ctx.fillRect(x, y, o.w, o.h);
+                    ctx.strokeStyle = C.DARK;
+                    ctx.lineWidth = 2;
+                    ctx.strokeRect(x, y, o.w, o.h);
+                }
+            });
+        }
+
+        // === DRAW STAR ===
+        function drawStar(sx, sy, size, pulse) {
+            const x = sx - camera.x, y = sy - camera.y;
+            const glow = Math.sin(pulse * 0.1) * 0.5 + 0.5;
+            const scale = 1 + glow * 0.2;
+
+            ctx.save();
+            ctx.translate(x + size / 2, y + size / 2);
+            ctx.scale(scale, scale);
+
+            ctx.shadowColor = '#fff';
+            ctx.shadowBlur = 10 + glow * 10;
+            ctx.fillStyle = C.BG;
+            ctx.strokeStyle = C.DARK;
+            ctx.lineWidth = 1;
+
+            ctx.beginPath();
+            ctx.moveTo(0, -size / 2);
+            ctx.lineTo(size / 2, size / 4);
+            ctx.lineTo(-size / 2, size / 4);
+            ctx.closePath();
+            ctx.fill();
+            ctx.stroke();
+
+            ctx.beginPath();
+            ctx.moveTo(0, size / 2);
+            ctx.lineTo(size / 2, -size / 4);
+            ctx.lineTo(-size / 2, -size / 4);
+            ctx.closePath();
+            ctx.fill();
+            ctx.stroke();
+
+            ctx.shadowBlur = 0;
+            ctx.restore();
+        }
+
+        // === SCANLINES ===
+        function drawScanlines() {
+            ctx.fillStyle = 'rgba(0,0,0,0.06)';
+            for (let y = 0; y < canvas.height; y += 3) {
+                ctx.fillRect(0, y, canvas.width, 1);
+            }
+        }
+
+        // Floating text
+        function addFloat(x, y, text) { gs.floats.push({ x, y, text, life: 50, vy: -2 }); }
+
+        function drawFloats() {
+            gs.floats = gs.floats.filter(f => {
+                f.y += f.vy;
+                f.life--;
+                if (f.life > 0) {
+                    const x = f.x - camera.x, y = f.y - camera.y;
+                    ctx.save();
+                    ctx.font = 'bold 13px Courier New';
+                    ctx.textAlign = 'center';
+                    ctx.fillStyle = `rgba(255,255,255,${f.life / 50})`;
+                    ctx.strokeStyle = `rgba(0,0,0,${f.life / 50})`;
+                    ctx.lineWidth = 2;
+                    ctx.strokeText(f.text, x, y);
+                    ctx.fillText(f.text, x, y);
+                    ctx.restore();
+                    return true;
+                }
+                return false;
+            });
+        }
+
+        // Gorilla speech
+        function showSpeech(text) {
+            gorillaSpeech.innerText = text;
+            gorillaSpeech.style.display = 'block';
+            gs.goriSpeechTimer = 80;
+        }
+
+        function updateSpeech() {
+            if (gs.goriSpeechTimer > 0) {
+                gs.goriSpeechTimer--;
+                const rect = container.getBoundingClientRect();
+                const sx = (gorilla.x - camera.x) / canvas.width * rect.width + 10;
+                const sy = (gorilla.y - camera.y - 60) / canvas.height * rect.height;
+                gorillaSpeech.style.left = sx + 'px';
+                gorillaSpeech.style.top = Math.max(0, sy) + 'px';
+                if (gs.goriSpeechTimer <= 0) gorillaSpeech.style.display = 'none';
+            }
+        }
+
+        // Gorilla AI
+        function updateGorilla() {
+            if (!gs.goriActive) return;
+
+            gorilla.walk++;
+            if (gorilla.punch > 0) gorilla.punch--;
+
+            // Activate satanic mode if boss exists
+            gs.satanic = boss !== null;
+
+            // Find target (prefer boss)
+            let target = null;
+            let minDist = Infinity;
+
+            if (boss) {
+                target = boss;
+                minDist = Math.hypot(boss.x - gorilla.x, boss.y - gorilla.y);
+            } else {
+                zombies.forEach(z => {
+                    const d = Math.hypot(z.x - gorilla.x, z.y - gorilla.y);
+                    if (d < minDist) { minDist = d; target = z; }
+                });
+            }
+
+            if (target) {
+                const dx = target.x - gorilla.x;
+                const dy = target.y - gorilla.y;
+                const angle = Math.atan2(dy, dx);
+                const spd = minDist < 80 ? gorilla.speed * 1.4 : gorilla.speed;
+
+                gorilla.x += Math.cos(angle) * spd;
+                gorilla.y += Math.sin(angle) * spd;
+
+                // Collision
+                if (collide(gorilla, target)) {
+                    gorilla.punch = 18;
+
+                    if (target === boss) {
+                        boss.hp -= 3;
+                        boss.hit = 10;
+                        addFloat(boss.x + 40, boss.y, '-3');
+                        showSpeech(gs.satanic ? "¡¡MUERE, DEMONIO!! 👹🔥" : GORILLA_PHRASES[Math.floor(Math.random() * GORILLA_PHRASES.length)]);
+
+                        if (boss.hp <= 0) {
+                            gs.score += 50;
+                            addFloat(boss.x + 40, boss.y, '+50 BOSS!');
+                            boss = null;
+                            bossHealthEl.style.display = 'none';
+                            bossLabel.style.display = 'none';
+                            gs.satanic = false;
+                        }
+                    } else {
+                        zombies = zombies.filter(z => z !== target);
+                        gs.score += 5;
+                        gs.kills++;
+                        addFloat(target.x, target.y, '+5');
+                        showSpeech(GORILLA_PHRASES[Math.floor(Math.random() * GORILLA_PHRASES.length)]);
+                    }
+                    updateUI();
+                    checkRoom();
+                }
+            } else {
+                // Patrol near player
+                gorilla.x += (player.x - gorilla.x) * 0.02;
+                gorilla.y += (player.y - 50 - gorilla.y) * 0.02;
+            }
+
+            gs.goriTimer--;
+            if (gs.goriTimer <= 0) {
+                gs.goriActive = false;
+                gs.satanic = false;
+                gorilla.x = -200;
+                gorillaSpeech.style.display = 'none';
+                updateUI();
+            }
+        }
+
+        // Spawners
+        function spawnZombie() {
+            if (gs.over || gs.paused || gs.won) return;
+
+            const dirs = [[0, -30], [0, WORLD.h + 30], [-30, WORLD.h / 2], [WORLD.w + 30, WORLD.h / 2]];
+            const [bx, by] = dirs[Math.floor(Math.random() * 4)];
+            const x = bx === 0 || bx === WORLD.w + 30 ? bx : 50 + Math.random() * (WORLD.w - 100);
+            const y = by === WORLD.h / 2 ? 50 + Math.random() * (WORLD.h - 100) : by;
+
+            zombies.push({ x, y, w: 16, h: 18, speed: 0.6 + Math.random() * 0.5 + gs.room * 0.04, frame: Math.random() * 100 });
+        }
+
+        function spawnItem() {
+            if (gs.over || gs.paused || gs.won) return;
+            items.push({ x: 100 + Math.random() * (WORLD.w - 200), y: 100 + Math.random() * (WORLD.h - 200), w: 24, h: 24 });
+        }
+
+        // Fire weapon
+        let lastFire = 0;
+        function fire() {
+            if (gs.over || gs.paused || gs.won) return;
+
+            const now = Date.now();
+            const w = WEAPONS[gs.weapon];
+            if (now - lastFire < w.fireRate) return;
+            lastFire = now;
+
+            for (let i = 0; i < w.pellets; i++) {
+                const spread = (Math.random() - 0.5) * w.spread * 2;
+                const angle = player.aim + spread;
+                const speed = w.isFlame ? 5 : 9;
+
+                bullets.push({
+                    x: player.x + player.w / 2 - 3,
+                    y: player.y + player.h / 2 - 3,
+                    w: w.isFlame ? 10 : 6,
+                    h: w.isFlame ? 10 : 6,
+                    vx: Math.cos(angle) * speed,
+                    vy: Math.sin(angle) * speed,
+                    damage: w.damage,
+                    color: w.color,
+                    isFlame: w.isFlame,
+                    life: w.isFlame ? 30 : 999
+                });
+            }
+        }
+
+        function collide(a, b) {
+            return a.x < b.x + b.w && a.x + a.w > b.x && a.y < b.y + b.h && a.y + a.h > b.y;
+        }
+
+        function collideObs(e) {
+            for (const o of obstacles) if (collide(e, o)) return true;
+            return false;
+        }
+
+        function showGameOver() {
+            gs.over = true;
+            checkpoint = gs.room; // Guardar checkpoint en el nivel actual
+            gameOverMessage.innerText = GAME_OVER_MSG[Math.floor(Math.random() * GAME_OVER_MSG.length)];
+            finalScore.innerText = `Score: ${gs.score} | Habitación: ${gs.room}/${MAX_ROOMS} (Continúas aquí)`;
+            gameOverScreen.style.display = 'flex';
+        }
+
+        function checkRoom() {
+            const needBossKill = (gs.room === 4 || gs.room === 7) && boss !== null;
+            if (gs.kills >= gs.toKill && !needBossKill) {
+                if (gs.room >= MAX_ROOMS) showVictory();
+                else nextRoom();
+            }
+        }
+
+        function nextRoom() {
+            gs.room++;
+            gs.kills = 0;
+            gs.toKill = 12 + gs.room * 2;
+            player.x = WORLD.w / 2 - 16;
+            player.y = WORLD.h / 2 - 16;
+            zombies = [];
+            genObstacles();
+            updateUI();
+            showIntro();
+        }
+
+        // Main loop
+        function update() {
+            if (gs.paused || gs.over || gs.won) { requestAnimationFrame(update); return; }
+
+            gs.pulse++;
+            player.frame++;
+
+            // Camera follows player (expandable map)
+            const targetCamX = player.x - canvas.width / 2 + player.w / 2;
+            const targetCamY = player.y - canvas.height / 2 + player.h / 2;
+            camera.x += (targetCamX - camera.x) * 0.1;
+            camera.y += (targetCamY - camera.y) * 0.1;
+
+            // Keep camera in bounds
+            camera.x = Math.max(0, Math.min(WORLD.w - canvas.width, camera.x));
+            camera.y = Math.max(0, Math.min(WORLD.h - canvas.height, camera.y));
+
+            // Background
+            ctx.fillStyle = C.BG;
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            // World border (visual only)
+            ctx.strokeStyle = C.DARK;
+            ctx.lineWidth = 4;
+            ctx.strokeRect(-camera.x, -camera.y, WORLD.w, WORLD.h);
+
+            drawObstacles();
+
+            // Player movement (no border collision - expandable map)
+            const nx = player.x + player.dx;
+            const ny = player.y + player.dy;
+
+            if (nx >= 0 && nx <= WORLD.w - player.w) player.x = nx;
+            if (ny >= 0 && ny <= WORLD.h - player.h) player.y = ny;
+
+            if (collideObs(player)) {
+                player.x -= player.dx;
+                player.y -= player.dy;
+            }
+
+            // Bullets
+            bullets = bullets.filter(b => {
+                b.x += b.vx;
+                b.y += b.vy;
+                if (b.life !== 999) b.life--;
+
+                const bx = b.x - camera.x, by = b.y - camera.y;
+
+                if (b.isFlame) {
+                    ctx.fillStyle = `rgba(255, ${100 + Math.random() * 100}, 0, ${0.5 + Math.random() * 0.5})`;
+                    ctx.beginPath();
+                    ctx.arc(bx, by, 4 + Math.random() * 4, 0, Math.PI * 2);
+                    ctx.fill();
+                } else {
+                    ctx.fillStyle = b.color;
+                    ctx.beginPath();
+                    ctx.arc(bx + 3, by + 3, 4, 0, Math.PI * 2);
+                    ctx.fill();
+                    ctx.fillStyle = C.LIGHT;
+                    ctx.beginPath();
+                    ctx.arc(bx + 3, by + 3, 2, 0, Math.PI * 2);
+                    ctx.fill();
+                }
+
+                if (collideObs(b)) return false;
+                if (b.life <= 0) return false;
+
+                // Hit zombies
+                for (let i = zombies.length - 1; i >= 0; i--) {
+                    if (collide(b, zombies[i])) {
+                        addFloat(zombies[i].x, zombies[i].y, '+1');
+                        zombies.splice(i, 1);
+                        gs.score++;
+                        gs.kills++;
+                        updateUI();
+                        checkRoom();
+                        return false;
+                    }
+                }
+
+                // Hit boss
+                if (boss && collide(b, boss)) {
+                    boss.hp -= b.damage;
+                    boss.hit = 8;
+
+                    if (boss.hp <= 0) {
+                        gs.score += 50;
+                        addFloat(boss.x + 40, boss.y, '+50 BOSS!');
+                        boss = null;
+                        bossHealthEl.style.display = 'none';
+                        bossLabel.style.display = 'none';
+                        gs.satanic = false;
+                        updateUI();
+                        checkRoom();
+                    }
+                    return false;
+                }
+
+                return b.x > -50 && b.x < WORLD.w + 50 && b.y > -50 && b.y < WORLD.h + 50;
+            });
+
+            // Zombies
+            zombies.forEach(z => {
+                z.frame++;
+                const dx = player.x - z.x, dy = player.y - z.y;
+                const dist = Math.hypot(dx, dy);
+                if (dist > 0) {
+                    const nzx = z.x + (dx / dist) * z.speed;
+                    const nzy = z.y + (dy / dist) * z.speed;
+                    const test = { x: nzx, y: nzy, w: z.w, h: z.h };
+                    if (!collideObs(test)) { z.x = nzx; z.y = nzy; }
+                    else { z.x += (dy / dist) * z.speed * 0.5; z.y += (-dx / dist) * z.speed * 0.5; }
+                }
+                drawZombie(z.x, z.y, z.frame);
+                if (collide(z, player)) showGameOver();
+            });
+
+            // Boss
+            if (boss) {
+                if (boss.hit > 0) boss.hit--;
+                const dx = player.x - boss.x - 20;
+                const dy = player.y - boss.y - 20;
+                const dist = Math.hypot(dx, dy);
+                if (dist > 60) {
+                    boss.x += (dx / dist) * boss.speed;
+                    boss.y += (dy / dist) * boss.speed;
+                }
+                drawBoss(boss);
+                if (collide(boss, player)) showGameOver();
+            }
+
+            // Items
+            items = items.filter(item => {
+                drawStar(item.x, item.y, item.w, gs.pulse);
+                if (collide(item, player)) {
+                    gs.goriActive = true;
+                    gs.goriTimer = 500;
+                    gorilla.x = player.x - 30;
+                    gorilla.y = player.y - 40;
+                    showSpeech("¡LLEGÓ EL GORILÓN! 🦍💪");
+                    updateUI();
+                    return false;
+                }
+                return true;
+            });
+
+            updateGorilla();
+            updateSpeech();
+
+            drawHelloKitty(player.x, player.y, player.frame, player.aim - Math.PI / 2);
+
+            if (gs.goriActive) drawGorilla(gorilla.x, gorilla.y, gorilla.punch, gorilla.walk);
+
+            drawFloats();
+            drawScanlines();
+
+            requestAnimationFrame(update);
+        }
+
+        // Controls
+        const jc = $('joystickContainer');
+        jc.ontouchstart = e => {
+            e.preventDefault();
+            const r = jc.getBoundingClientRect();
+            joystick.active = true;
+            joystick.baseX = r.left + r.width / 2;
+            joystick.baseY = r.top + r.height / 2;
+        };
+
+        jc.ontouchmove = e => {
+            e.preventDefault();
+            if (!joystick.active) return;
+            const t = e.touches[0];
+            let dx = t.clientX - joystick.baseX;
+            let dy = t.clientY - joystick.baseY;
+            const dist = Math.hypot(dx, dy);
+            if (dist > joystick.maxDist) { dx = dx / dist * joystick.maxDist; dy = dy / dist * joystick.maxDist; }
+            joystickStick.style.transform = `translate(calc(-50% + ${dx}px), calc(-50% + ${dy}px))`;
+            player.dx = (dx / joystick.maxDist) * player.speed;
+            player.dy = (dy / joystick.maxDist) * player.speed;
+            if (dist > 5) player.aim = Math.atan2(dy, dx);
+        };
+
+        function resetJoy() {
+            joystick.active = false;
+            joystickStick.style.transform = 'translate(-50%, -50%)';
+            player.dx = 0;
+            player.dy = 0;
+        }
+        jc.ontouchend = resetJoy;
+        jc.ontouchcancel = resetJoy;
+
+        let fireInt = null;
+        const fb = $('fireButton');
+        fb.ontouchstart = e => { e.preventDefault(); fire(); fireInt = setInterval(fire, WEAPONS[gs.weapon].fireRate); };
+        fb.ontouchend = () => { if (fireInt) { clearInterval(fireInt); fireInt = null; } };
+        fb.ontouchcancel = () => { if (fireInt) { clearInterval(fireInt); fireInt = null; } };
+
+        // Keyboard
+        const keys = {};
+        document.onkeydown = e => { keys[e.key] = true; if (e.key === ' ') { e.preventDefault(); fire(); } updateKeys(); };
+        document.onkeyup = e => { keys[e.key] = false; updateKeys(); };
+
+        function updateKeys() {
+            player.dx = 0; player.dy = 0;
+            if (keys.ArrowLeft || keys.a) { player.dx = -player.speed; player.aim = Math.PI; }
+            if (keys.ArrowRight || keys.d) { player.dx = player.speed; player.aim = 0; }
+            if (keys.ArrowUp || keys.w) { player.dy = -player.speed; player.aim = -Math.PI / 2; }
+            if (keys.ArrowDown || keys.s) { player.dy = player.speed; player.aim = Math.PI / 2; }
+            if (player.dx && player.dy) player.aim = Math.atan2(player.dy, player.dx);
+            if (keys.q) { gs.weapon = (gs.weapon + 1) % WEAPONS.length; keys.q = false; updateUI(); }
+        }
+
+        // Spawners - MÁS ZOMBIS!
+        setInterval(spawnZombie, 700); // Era 1400, ahora el doble de zombis
+        setInterval(spawnItem, 14000);
+        setTimeout(spawnItem, 6000);
+
+        init();
+        requestAnimationFrame(update);
+        console.log('%c🎀 Protocolo Gorilón v2.0', 'font-size: 20px; color: #ff69b4; background: #0f380f; padding: 10px;');
+    </script>
+</body>
+
+</html>
