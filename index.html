@@ -396,6 +396,15 @@
         const container = document.getElementById('gameContainer');
         const MAX_ROOMS = 7;
 
+        // === FIX CANVAS RESOLUTION ===
+        function resizeCanvas() {
+            const rect = container.getBoundingClientRect();
+            canvas.width = rect.width;
+            canvas.height = rect.height;
+        }
+        resizeCanvas();
+        window.addEventListener('resize', resizeCanvas);
+
         // UI Elements
         const $ = id => document.getElementById(id);
 
