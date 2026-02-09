@@ -424,7 +424,7 @@
         const bossLabel = $('bossLabel');
 
         // Colors
-        const C = { DARK: '#0f380f', MID: '#306230', LIGHT: '#8bac0f', BG: '#9bbc0f', PINK: '#ffb6c1', HOTPINK: '#ff69b4' };
+        const C = { DARK: '#0f380f', MID: '#306230', LIGHT: '#8bac0f', BG: '#1a1a1a', FLOOR: '#252525', PINK: '#ffb6c1', HOTPINK: '#ff69b4 ' };
 
         // Weapons
         const WEAPONS = [
@@ -493,6 +493,9 @@
         function startLevel() {
             levelIntro.style.display = 'none';
             gs.paused = false;
+
+            // START MUSIC on first level start
+            if (!ytPlayer) createYouTubePlayer();
 
             // Spawn boss on room 4 and 7
             if (gs.room === 4 || gs.room === 7) {
@@ -1007,6 +1010,61 @@
             ctx.restore();
         }
 
+        // === RESIDENT EVIL STYLE FLOOR ===
+        function drawFloor() {
+            const tileSize = 60;
+            const startX = Math.floor(camera.x / tileSize) * tileSize;
+            const startY = Math.floor(camera.y / tileSize) * tileSize;
+
+            // Draw dark tiles
+            for (let x = startX - tileSize; x < camera.x + canvas.width + tileSize; x += tileSize) {
+                for (let y = startY - tileSize; y < camera.y + canvas.height + tileSize; y += tileSize) {
+                    const screenX = x - camera.x;
+                    const screenY = y - camera.y;
+
+                    // Checkered pattern
+                    const isDark = ((x / tileSize + y / tileSize) % 2) === 0;
+                    ctx.fillStyle = isDark ? '#1f1f1f' : '#252525';
+                    ctx.fillRect(screenX, screenY, tileSize, tileSize);
+
+                    // Grout lines
+                    ctx.strokeStyle = '#0a0a0a';
+                    ctx.lineWidth = 2;
+                    ctx.strokeRect(screenX, screenY, tileSize, tileSize);
+
+                    // Random cracks (seeded by position)
+                    const seed = (x * 7 + y * 13) % 100;
+                    if (seed < 15) {
+                        ctx.strokeStyle = '#0f0f0f';
+                        ctx.lineWidth = 1;
+                        ctx.beginPath();
+                        ctx.moveTo(screenX + 10, screenY + 20);
+                        ctx.lineTo(screenX + 30, screenY + 35);
+                        ctx.lineTo(screenX + 45, screenY + 50);
+                        ctx.stroke();
+                    }
+
+                    // Random blood stains
+                    if (seed > 85 && seed < 95) {
+                        ctx.fillStyle = 'rgba(60, 10, 10, 0.4)';
+                        ctx.beginPath();
+                        ctx.ellipse(screenX + 30, screenY + 30, 15, 10, seed * 0.1, 0, Math.PI * 2);
+                        ctx.fill();
+                    }
+                }
+            }
+
+            // Ambient fog/dust effect
+            const gradient = ctx.createRadialGradient(
+                canvas.width / 2, canvas.height / 2, 50,
+                canvas.width / 2, canvas.height / 2, canvas.width * 0.7
+            );
+            gradient.addColorStop(0, 'rgba(0,0,0,0)');
+            gradient.addColorStop(1, 'rgba(0,0,0,0.3)');
+            ctx.fillStyle = gradient;
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+        }
+
         // === SCANLINES ===
         function drawScanlines() {
             ctx.fillStyle = 'rgba(0,0,0,0.06)';
@@ -1239,12 +1297,18 @@
             camera.x = Math.max(0, Math.min(WORLD.w - canvas.width, camera.x));
             camera.y = Math.max(0, Math.min(WORLD.h - canvas.height, camera.y));
 
-            // Background
+            // Background - Dark apocalyptic
             ctx.fillStyle = C.BG;
             ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-            // World border (visual only)
-            ctx.strokeStyle = C.DARK;
+            // Draw RE-style floor tiles
+            drawFloor();
+
+            // World border (rusty metal)
+            ctx.strokeStyle = '#3a2a1a';
+            ctx.lineWidth = 8;
+            ctx.strokeRect(-camera.x - 2, -camera.y - 2, WORLD.w + 4, WORLD.h + 4);
+            ctx.strokeStyle = '#2a1a0a';
             ctx.lineWidth = 4;
             ctx.strokeRect(-camera.x, -camera.y, WORLD.w, WORLD.h);
 
