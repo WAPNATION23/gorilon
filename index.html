@@ -495,7 +495,7 @@
             gs.paused = false;
 
             // START MUSIC on first level start
-            if (!ytPlayer) createYouTubePlayer();
+            startMusic();
 
             // Spawn boss on room 4 and 7
             if (gs.room === 4 || gs.room === 7) {
@@ -1508,42 +1508,42 @@
         requestAnimationFrame(update);
         console.log('%c🎀 Protocolo Gorilón v2.0', 'font-size: 20px; color: #ff69b4; background: #0f380f; padding: 10px;');
 
-        // === MUSIC SYSTEM (Lana Del Rey - Video Games via YouTube) ===
+        // === MUSIC SYSTEM (Lana Del Rey - Video Games - NO ADS) ===
         let musicPlaying = false;
-        let ytPlayer = null;
+        let bgMusic = null;
         const musicBtn = $('musicBtn');
 
-        // Create hidden YouTube iframe
-        function createYouTubePlayer() {
-            const iframe = document.createElement('iframe');
-            iframe.id = 'ytPlayer';
-            iframe.width = '1';
-            iframe.height = '1';
-            iframe.style.position = 'absolute';
-            iframe.style.top = '-100px';
-            iframe.style.left = '-100px';
-            // Video Games - Lana Del Rey (loop enabled, autoplay)
-            iframe.src = 'https://www.youtube.com/embed/cE6wxDqdOV0?autoplay=1&loop=1&playlist=cE6wxDqdOV0&controls=0&enablejsapi=1';
-            iframe.allow = 'autoplay; encrypted-media';
-            iframe.frameBorder = '0';
-            document.body.appendChild(iframe);
-            ytPlayer = iframe;
-            musicPlaying = true;
-            musicBtn.textContent = '🎵';
+        // Direct audio source (no YouTube ads!)
+        const MUSIC_URL = 'https://archive.org/download/VideoGamesLanaDelRey/Lana%20Del%20Rey%20-%20Video%20Games.mp3';
+
+        function createAudio() {
+            if (bgMusic) return;
+            bgMusic = new Audio(MUSIC_URL);
+            bgMusic.loop = true;
+            bgMusic.volume = 0.5;
+            bgMusic.crossOrigin = 'anonymous';
+        }
+
+        function startMusic() {
+            createAudio();
+            bgMusic.play().then(() => {
+                musicPlaying = true;
+                musicBtn.textContent = '🎵';
+                musicBtn.classList.remove('muted');
+            }).catch(e => {
+                console.log('Audio needs user interaction');
+            });
         }
 
         function toggleMusic() {
-            if (!ytPlayer) {
-                createYouTubePlayer();
-                return;
-            }
+            createAudio();
 
             if (musicPlaying) {
-                ytPlayer.src = '';
+                bgMusic.pause();
                 musicBtn.textContent = '🔇';
                 musicBtn.classList.add('muted');
             } else {
-                ytPlayer.src = 'https://www.youtube.com/embed/cE6wxDqdOV0?autoplay=1&loop=1&playlist=cE6wxDqdOV0&controls=0';
+                bgMusic.play();
                 musicBtn.textContent = '🎵';
                 musicBtn.classList.remove('muted');
             }
@@ -1552,15 +1552,6 @@
 
         musicBtn.onclick = toggleMusic;
         musicBtn.ontouchend = (e) => { e.preventDefault(); toggleMusic(); };
-
-        // AUTO-START: Activa música con el primer toque
-        function autoStartMusic() {
-            if (!ytPlayer) createYouTubePlayer();
-            document.removeEventListener('click', autoStartMusic);
-            document.removeEventListener('touchstart', autoStartMusic);
-        }
-        document.addEventListener('click', autoStartMusic);
-        document.addEventListener('touchstart', autoStartMusic);
     </script>
 </body>
 
