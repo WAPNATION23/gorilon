@@ -399,8 +399,10 @@
         // === FIX CANVAS RESOLUTION ===
         function resizeCanvas() {
             const rect = container.getBoundingClientRect();
-            canvas.width = rect.width;
-            canvas.height = rect.height;
+            // Zoom out: render at higher resolution for wider FOV
+            const zoomOut = 1.45;
+            canvas.width = rect.width * zoomOut;
+            canvas.height = rect.height * zoomOut;
         }
         resizeCanvas();
         window.addEventListener('resize', resizeCanvas);
@@ -597,7 +599,7 @@
 
             gs = { score: 0, room: checkpoint, kills: 0, toKill: 12 + checkpoint * 2, over: false, won: false, paused: true, goriActive: true, goriTimer: 0, goriSpeechTimer: 0, pulse: 0, floats: [], weapon: 0, satanic: false, satTimer: 0, combo: 0, comboTimer: 0, maxCombo: 0, piropoTimer: 0 };
             player = { x: WORLD.w / 2 - 16, y: WORLD.h / 2 - 16, w: 32, h: 32, speed: 2.5, dx: 0, dy: 0, frame: 0, aim: 0 };
-            gorilla = { x: WORLD.w / 2 + 30, y: WORLD.h / 2 - 16, w: 56, h: 56, speed: 3, target: null, punch: 0, walk: 0 };
+            gorilla = { x: WORLD.w / 2 + 30, y: WORLD.h / 2 - 16, w: 56, h: 56, speed: 2, target: null, punch: 0, walk: 0, attackCooldown: 0 };
             boss = null;
             bullets = []; zombies = []; items = []; particles = []; miniBosses = [];
             genObstacles();
@@ -642,8 +644,8 @@
                 x: WORLD.w / 2 - 40,
                 y: 100,
                 w: 80, h: 80,
-                hp: 50 + gs.room * 10,
-                maxHp: 50 + gs.room * 10,
+                hp: 150 + gs.room * 30,
+                maxHp: 150 + gs.room * 30,
                 speed: 1.2,
                 frame: 0,
                 hit: 0
@@ -1942,7 +1944,7 @@
         function showSpeech(text) {
             gorillaSpeech.innerText = text;
             gorillaSpeech.style.display = 'block';
-            gs.goriSpeechTimer = 80;
+            gs.goriSpeechTimer = 180;
         }
 
         function updateSpeech() {
@@ -1963,6 +1965,7 @@
 
             gorilla.walk++;
             if (gorilla.punch > 0) gorilla.punch--;
+            if (gorilla.attackCooldown > 0) gorilla.attackCooldown--;
 
             // Satanic timer from star powerup
             if (gs.satTimer > 0) {
@@ -2007,19 +2010,20 @@
                 const dx = target.x - gorilla.x;
                 const dy = target.y - gorilla.y;
                 const angle = Math.atan2(dy, dx);
-                const spd = minDist < 80 ? gorilla.speed * 1.4 : gorilla.speed;
+                const spd = minDist < 80 ? gorilla.speed * 1.1 : gorilla.speed;
 
                 gorilla.x += Math.cos(angle) * spd;
                 gorilla.y += Math.sin(angle) * spd;
 
-                // Collision
-                if (collide(gorilla, target)) {
+                // Collision - with attack cooldown
+                if (collide(gorilla, target) && gorilla.attackCooldown <= 0) {
                     gorilla.punch = 18;
+                    gorilla.attackCooldown = 35; // ~0.6s between attacks
 
                     if (target === boss) {
-                        boss.hp -= (gs.satanic ? 6 : 3);
+                        boss.hp -= (gs.satanic ? 3 : 1);
                         boss.hit = 10;
-                        addFloat(boss.x + 40, boss.y, gs.satanic ? '-6 🔥' : '-3');
+                        addFloat(boss.x + 40, boss.y, gs.satanic ? '-3 🔥' : '-1');
                         showSpeech(gs.satanic ? "MUERE DEMONIO CULIAO 👹🔥" : GORILLA_PHRASES[Math.floor(Math.random() * GORILLA_PHRASES.length)]);
 
                         if (boss.hp <= 0) {
@@ -2032,9 +2036,9 @@
                         }
                     } else if (miniBosses.includes(target)) {
                         // Gorilla hits mini-boss
-                        target.hp -= (gs.satanic ? 4 : 2);
+                        target.hp -= (gs.satanic ? 2 : 1);
                         target.hit = 10;
-                        addFloat(target.x + 20, target.y, gs.satanic ? '-4 🔥' : '-2');
+                        addFloat(target.x + 20, target.y, gs.satanic ? '-2 🔥' : '-1');
                         showSpeech(MINIBOSS_GORILLA_TAUNT[Math.floor(Math.random() * MINIBOSS_GORILLA_TAUNT.length)]);
                         addParticles(target.x + 20, target.y + 20, gs.satanic ? '#ff4400' : '#ffaa00', 8, 2.5, 20);
 
@@ -2390,7 +2394,7 @@
                 if (collide(item, player)) {
                     gs.satanic = true;
                     gs.satTimer = 600; // ~10 seconds of rage
-                    gorilla.speed = 5;
+                    gorilla.speed = 3.5;
                     showSpeech("🔥👹 MODO SATÁNICO ACTIVADO CTMRE 👹🔥");
                     addParticles(gorilla.x + 28, gorilla.y + 28, '#ff0000', 20, 3, 30);
                     addParticles(gorilla.x + 28, gorilla.y + 28, '#ff6600', 15, 4, 25);
@@ -2570,7 +2574,7 @@
             if (!gs.satanic && !gs.over && !gs.paused) {
                 gs.satanic = true;
                 gs.satTimer = 600;
-                gorilla.speed = 5;
+                gorilla.speed = 3.5;
                 showSpeech("❤️ KONAMI CODE = MODO SATÁNICO ❤️ WUOM");
                 addParticles(gorilla.x + 28, gorilla.y + 28, '#ff0000', 20, 3, 30);
                 updateUI();
