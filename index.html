@@ -324,6 +324,28 @@
             z-index: 20;
             text-shadow: 1px 1px 0 #000;
         }
+
+        /* Music Button */
+        #musicBtn {
+            position: absolute;
+            top: 8px;
+            right: 60px;
+            width: 40px;
+            height: 40px;
+            background: #306230;
+            border: 3px solid #0f380f;
+            border-radius: 8px;
+            font-size: 20px;
+            z-index: 100;
+            cursor: pointer;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        #musicBtn.muted {
+            opacity: 0.5;
+        }
     </style>
 </head>
 
@@ -335,6 +357,7 @@
             <span>🦍 <span id="goriStatus">OFF</span></span>
         </div>
         <div id="weaponUI">🔫 <span id="weaponName">PISTOLA</span></div>
+        <button id="musicBtn" title="Toggle Music">🔊</button>
         <div id="bossLabel">☠️ ZOMBIE BOSS ☠️</div>
         <div id="bossHealth">
             <div id="bossHealthBar" style="width:100%"></div>
@@ -538,7 +561,9 @@
 
         function genObstacles() {
             obstacles = [];
-            const n = 4 + gs.room;
+            const n = 6 + gs.room;
+            const types = ['ruin', 'tree', 'tomb', 'car', 'blood', 'barrel'];
+
             for (let i = 0; i < n; i++) {
                 let x, y, ok = false, att = 0;
                 while (!ok && att++ < 40) {
@@ -547,7 +572,23 @@
                     const d = Math.hypot(x - WORLD.w / 2, y - WORLD.h / 2);
                     if (d > 120) ok = true;
                 }
-                if (ok) obstacles.push({ x, y, w: 50 + Math.random() * 40, h: 50 + Math.random() * 40 });
+                if (ok) {
+                    const type = types[Math.floor(Math.random() * types.length)];
+                    let w = 50, h = 50;
+                    if (type === 'ruin') { w = 60 + Math.random() * 50; h = 50 + Math.random() * 40; }
+                    else if (type === 'tree') { w = 30; h = 60; }
+                    else if (type === 'tomb') { w = 35; h = 45; }
+                    else if (type === 'car') { w = 70; h = 35; }
+                    else if (type === 'blood') { w = 40; h = 40; }
+                    else if (type === 'barrel') { w = 25; h = 30; }
+                    obstacles.push({ x, y, w, h, type });
+                }
+            }
+            // Add some decorative blood pools (non-blocking)
+            for (let i = 0; i < 8; i++) {
+                const x = 50 + Math.random() * (WORLD.w - 100);
+                const y = 50 + Math.random() * (WORLD.h - 100);
+                obstacles.push({ x, y, w: 30, h: 20, type: 'decor_blood', noCollide: true });
             }
         }
 
@@ -810,19 +851,123 @@
             bossHealthBar.style.width = (b.hp / b.maxHp * 100) + '%';
         }
 
-        // === DRAW OBSTACLES ===
+        // === DRAW APOCALYPTIC OBSTACLES ===
         function drawObstacles() {
             obstacles.forEach(o => {
                 const x = o.x - camera.x, y = o.y - camera.y;
-                if (x > -100 && x < canvas.width + 100 && y > -100 && y < canvas.height + 100) {
-                    ctx.fillStyle = 'rgba(0,0,0,0.15)';
-                    ctx.fillRect(x + 4, y + 4, o.w, o.h);
-                    ctx.fillStyle = '#1a4a1a';
-                    ctx.fillRect(x, y, o.w, o.h);
-                    ctx.strokeStyle = C.DARK;
-                    ctx.lineWidth = 2;
-                    ctx.strokeRect(x, y, o.w, o.h);
+                if (x < -100 || x > canvas.width + 100 || y < -100 || y > canvas.height + 100) return;
+
+                ctx.save();
+
+                switch (o.type) {
+                    case 'ruin': // Ruinas de edificio
+                        ctx.fillStyle = '#2a2a2a';
+                        ctx.fillRect(x, y, o.w, o.h);
+                        // Grietas
+                        ctx.strokeStyle = '#1a1a1a';
+                        ctx.lineWidth = 2;
+                        ctx.beginPath();
+                        ctx.moveTo(x + 10, y); ctx.lineTo(x + 20, y + o.h);
+                        ctx.moveTo(x + o.w - 15, y); ctx.lineTo(x + o.w - 25, y + o.h / 2);
+                        ctx.stroke();
+                        // Ventanas rotas
+                        ctx.fillStyle = '#0a0a0a';
+                        ctx.fillRect(x + 8, y + 10, 12, 15);
+                        ctx.fillRect(x + o.w - 22, y + 10, 12, 15);
+                        // Borde
+                        ctx.strokeStyle = '#1a1a1a';
+                        ctx.strokeRect(x, y, o.w, o.h);
+                        break;
+
+                    case 'tree': // Árbol quemado
+                        // Tronco
+                        ctx.fillStyle = '#1a1208';
+                        ctx.fillRect(x + 10, y + 20, 10, 40);
+                        // Ramas muertas
+                        ctx.strokeStyle = '#2a1a0a';
+                        ctx.lineWidth = 3;
+                        ctx.beginPath();
+                        ctx.moveTo(x + 15, y + 25); ctx.lineTo(x + 5, y + 10);
+                        ctx.moveTo(x + 15, y + 25); ctx.lineTo(x + 25, y + 5);
+                        ctx.moveTo(x + 15, y + 35); ctx.lineTo(x, y + 30);
+                        ctx.moveTo(x + 15, y + 35); ctx.lineTo(x + 28, y + 28);
+                        ctx.stroke();
+                        break;
+
+                    case 'tomb': // Lápida
+                        ctx.fillStyle = '#3a3a3a';
+                        // Base
+                        ctx.fillRect(x + 5, y + 35, 25, 10);
+                        // Lápida
+                        ctx.beginPath();
+                        ctx.moveTo(x + 7, y + 35);
+                        ctx.lineTo(x + 7, y + 12);
+                        ctx.quadraticCurveTo(x + 17, y, x + 28, y + 12);
+                        ctx.lineTo(x + 28, y + 35);
+                        ctx.fill();
+                        // Cruz o RIP
+                        ctx.fillStyle = '#1a1a1a';
+                        ctx.font = '8px Courier';
+                        ctx.fillText('RIP', x + 9, y + 25);
+                        break;
+
+                    case 'car': // Auto destruido
+                        ctx.fillStyle = '#2a2a2a';
+                        // Cuerpo
+                        ctx.fillRect(x, y + 10, o.w, 20);
+                        // Techo aplastado
+                        ctx.fillRect(x + 15, y, 35, 12);
+                        // Ruedas
+                        ctx.fillStyle = '#1a1a1a';
+                        ctx.beginPath();
+                        ctx.arc(x + 12, y + 32, 8, 0, Math.PI * 2);
+                        ctx.arc(x + o.w - 12, y + 32, 8, 0, Math.PI * 2);
+                        ctx.fill();
+                        // Fuego/humo
+                        if (Math.random() > 0.7) {
+                            ctx.fillStyle = 'rgba(100, 100, 100, 0.5)';
+                            ctx.beginPath();
+                            ctx.arc(x + 35, y - 5, 8 + Math.random() * 5, 0, Math.PI * 2);
+                            ctx.fill();
+                        }
+                        break;
+
+                    case 'blood': // Charco de sangre (sólido)
+                        ctx.fillStyle = '#4a0a0a';
+                        ctx.beginPath();
+                        ctx.ellipse(x + o.w / 2, y + o.h / 2, o.w / 2, o.h / 3, 0, 0, Math.PI * 2);
+                        ctx.fill();
+                        ctx.fillStyle = '#3a0505';
+                        ctx.beginPath();
+                        ctx.ellipse(x + o.w / 2 + 5, y + o.h / 2 + 3, o.w / 4, o.h / 5, 0.3, 0, Math.PI * 2);
+                        ctx.fill();
+                        break;
+
+                    case 'barrel': // Barril tóxico
+                        ctx.fillStyle = '#3a3a00';
+                        ctx.fillRect(x, y + 3, o.w, o.h - 6);
+                        ctx.fillStyle = '#2a2a00';
+                        ctx.fillRect(x, y, o.w, 5);
+                        ctx.fillRect(x, y + o.h - 5, o.w, 5);
+                        // Símbolo tóxico
+                        ctx.fillStyle = '#8a8a00';
+                        ctx.beginPath();
+                        ctx.arc(x + o.w / 2, y + o.h / 2, 6, 0, Math.PI * 2);
+                        ctx.fill();
+                        // Goteo
+                        ctx.fillStyle = '#5a5a00';
+                        ctx.fillRect(x + o.w - 3, y + o.h, 4, 8 + Math.random() * 5);
+                        break;
+
+                    case 'decor_blood': // Sangre decorativa (no bloquea)
+                        ctx.fillStyle = 'rgba(80, 10, 10, 0.4)';
+                        ctx.beginPath();
+                        ctx.ellipse(x + o.w / 2, y + o.h / 2, o.w / 2, o.h / 3, Math.random(), 0, Math.PI * 2);
+                        ctx.fill();
+                        break;
                 }
+
+                ctx.restore();
             });
         }
 
@@ -1042,7 +1187,10 @@
         }
 
         function collideObs(e) {
-            for (const o of obstacles) if (collide(e, o)) return true;
+            for (const o of obstacles) {
+                if (o.noCollide) continue; // Decorative obstacles don't block
+                if (collide(e, o)) return true;
+            }
             return false;
         }
 
@@ -1295,6 +1443,85 @@
         init();
         requestAnimationFrame(update);
         console.log('%c🎀 Protocolo Gorilón v2.0', 'font-size: 20px; color: #ff69b4; background: #0f380f; padding: 10px;');
+
+        // === MUSIC SYSTEM ===
+        let audioCtx = null;
+        let musicPlaying = false;
+        let oscillators = [];
+        const musicBtn = $('musicBtn');
+
+        function createAmbientMusic() {
+            if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+
+            const masterGain = audioCtx.createGain();
+            masterGain.gain.value = 0.15;
+            masterGain.connect(audioCtx.destination);
+
+            // Low drone
+            const drone = audioCtx.createOscillator();
+            drone.type = 'sine';
+            drone.frequency.value = 55;
+            const droneGain = audioCtx.createGain();
+            droneGain.gain.value = 0.4;
+            drone.connect(droneGain).connect(masterGain);
+            drone.start();
+            oscillators.push(drone);
+
+            // Creepy high
+            const high = audioCtx.createOscillator();
+            high.type = 'triangle';
+            high.frequency.value = 440;
+            const highGain = audioCtx.createGain();
+            highGain.gain.value = 0.05;
+            high.connect(highGain).connect(masterGain);
+            high.start();
+            oscillators.push(high);
+
+            // LFO
+            const lfo = audioCtx.createOscillator();
+            lfo.type = 'sine';
+            lfo.frequency.value = 0.1;
+            const lfoGain = audioCtx.createGain();
+            lfoGain.gain.value = 20;
+            lfo.connect(lfoGain).connect(high.frequency);
+            lfo.start();
+            oscillators.push(lfo);
+
+            // Rumble
+            const rumble = audioCtx.createOscillator();
+            rumble.type = 'sawtooth';
+            rumble.frequency.value = 30;
+            const rumbleGain = audioCtx.createGain();
+            rumbleGain.gain.value = 0.08;
+            const filter = audioCtx.createBiquadFilter();
+            filter.type = 'lowpass';
+            filter.frequency.value = 100;
+            rumble.connect(filter).connect(rumbleGain).connect(masterGain);
+            rumble.start();
+            oscillators.push(rumble);
+        }
+
+        function stopMusic() {
+            oscillators.forEach(o => o.stop());
+            oscillators = [];
+            if (audioCtx) { audioCtx.close(); audioCtx = null; }
+        }
+
+        function toggleMusic() {
+            if (musicPlaying) {
+                stopMusic();
+                musicBtn.textContent = '🔇';
+                musicBtn.classList.add('muted');
+            } else {
+                createAmbientMusic();
+                musicBtn.textContent = '🔊';
+                musicBtn.classList.remove('muted');
+            }
+            musicPlaying = !musicPlaying;
+        }
+
+        musicBtn.onclick = toggleMusic;
+        musicBtn.ontouchend = (e) => { e.preventDefault(); toggleMusic(); };
     </script>
 </body>
 
