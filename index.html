@@ -597,7 +597,7 @@
             if (loveInterval) clearInterval(loveInterval);
             document.querySelectorAll('.love-explosion,.te-quiero').forEach(e => e.remove());
 
-            gs = { score: 0, room: checkpoint, kills: 0, toKill: 12 + checkpoint * 2, over: false, won: false, paused: true, goriActive: true, goriTimer: 0, goriSpeechTimer: 0, pulse: 0, floats: [], weapon: 0, satanic: false, satTimer: 0, combo: 0, comboTimer: 0, maxCombo: 0, piropoTimer: 0 };
+            gs = { score: 0, room: checkpoint, kills: 0, toKill: 20 + checkpoint * 3, over: false, won: false, paused: true, goriActive: true, goriTimer: 0, goriSpeechTimer: 0, pulse: 0, floats: [], weapon: 0, satanic: false, satTimer: 0, combo: 0, comboTimer: 0, maxCombo: 0, piropoTimer: 0 };
             player = { x: WORLD.w / 2 - 16, y: WORLD.h / 2 - 16, w: 32, h: 32, speed: 2.5, dx: 0, dy: 0, frame: 0, aim: 0 };
             gorilla = { x: WORLD.w / 2 + 30, y: WORLD.h / 2 - 16, w: 56, h: 56, speed: 2, target: null, punch: 0, walk: 0, attackCooldown: 0 };
             boss = null;
@@ -2406,7 +2406,7 @@
         function nextRoom() {
             gs.room++;
             gs.kills = 0;
-            gs.toKill = 12 + gs.room * 2;
+            gs.toKill = 20 + gs.room * 3;
             player.x = WORLD.w / 2 - 16;
             player.y = WORLD.h / 2 - 16;
             zombies = [];
