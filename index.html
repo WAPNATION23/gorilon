@@ -525,6 +525,43 @@
         const GORILLA_PHRASES = ["SALE PAJARÓN CULIAO FEO 🦍", "PERRO IJO LA PERRA 🐕", "SAPO CTMRE 🐸", "ROBO MÁS QUE USTEDES WEON", "YOJOI CHORO WUOM 😤", "ÉNFASISSS 💪🔥", "CON MI SEÑORA NO PAJARÓN CULIAO 🦍❤️", "ALÉJATE DE MI KUROMI CULIAO 💀", "CARTERA DE MIMBRE Y LA CTMRE KSAKJSKJ 🧺", "ANDA PA LA CASA PERKIN QL 🏠", "TERRIBLE DE SACOWEA ESTE ZOMBI 💀", "SOY MÁS CHORO QUE TODOS USTEDES 😎", "PURO PERKIN MUERTO AQUÍ WUOM 🪦", "CACHÁI O NO CACHÁI CTMRE 🧠"];
         const GAME_OVER_MSG = ["CAGASTE WUOM 💀", "El Gorilón se fue pal hoyo 🦍💔", "Los zombis te sacaron la chucha 🎉", "¡Vuelve más choro! 💪", "TERRIBLE DE MALO WUON 😭"];
 
+        // 🔥 COMBO KILL MESSAGES - Chilean combo phrases
+        const COMBO_MSGS = [
+            { min: 3, text: "TRIPLE KILL WUOM 🔥", color: "#ffaa00" },
+            { min: 5, text: "ANDAI ON FIRE SEÑORA 🔥🔥", color: "#ff6600" },
+            { min: 8, text: "TERRIBLE DE CHORA MI SEÑORA 💪✨", color: "#ff00ff" },
+            { min: 12, text: "DIOSA DEL APOCALIPSIS 👑🔥", color: "#ff0088" },
+            { min: 16, text: "NADIE TE PARA KUROMI HERMOSA 💜🦍", color: "#aa00ff" },
+            { min: 20, text: "ERES LA MÁS CHORA DEL MUNDO 🌎❤️‍🔥", color: "#ff1493" }
+        ];
+
+        // 💀 ZOMBIE DEATH CRIES - Funny Chilean zombie last words
+        const ZOMBIE_DEATHS = [
+            "AAAH LA WEÁAA 💀", "ME MORÍ COMO PERKIN 🪦", "NOOOO CTMRE 😱",
+            "ME DOLIÓ EL ALMA WN 👻", "DILE A MI VIEJA Q LA QUIERO 😭",
+            "ERA PERKÍN NOMÁI 😵", "CAGÓ LA COSA 💩", "ME SACÓ LA CHUCHA 🤕",
+            "YA FUE... WN 🫠", "MAMI AUXILIO 🧟", "NO ERA TAN CHORO 😅",
+            "ME HICIERON PEBRE 🥘", "ANDABA VOLAO NOMAS 🍃", "GG WN 🎮"
+        ];
+
+        // 🦍❤️ GORILLA PIROPOS - Love phrases mixed with Chilean humor
+        const GORILLA_PIROPOS = [
+            "MI SEÑORA ES LA MÁS BELLA DEL APOCALIPSIS 🦍❤️",
+            "POR TI ME HAGO VEGANO WUOM 🥬🦍",
+            "TE QUIERO MÁS QUE A LOS PLÁTANOS 🍌❤️",
+            "SOMOS EL DÚO MÁS CHORO DEL MUNDO 💪❤️",
+            "MI KUROMI HERMOSA, POR TI DOY LA VIDA 🦍💜",
+            "ERES MÁS LINDA QUE UNA EMPANADA EN SEPTIEMBRE 🥟❤️",
+            "CONTIGO HASTA EN EL APOCALIPSIS SOY FELIZ 🧟❤️",
+            "MI CORAZÓN ES TUYO SEÑORA WUOM 💘🦍",
+            "JUNTOS SOMOS INVENCIBLES MI AMOR 💕🔥",
+            "ELLA ME HACE MÁS CHORO 👉❤️👈"
+        ];
+
+        // 🎮 KONAMI CODE sequence
+        const KONAMI_CODE = ['ArrowUp','ArrowUp','ArrowDown','ArrowDown','ArrowLeft','ArrowRight','ArrowLeft','ArrowRight','b','a'];
+        let konamiIndex = 0;
+
         // World size (expandable map)
         const WORLD = { w: 1200, h: 900 };
 
@@ -546,7 +583,7 @@
             if (loveInterval) clearInterval(loveInterval);
             document.querySelectorAll('.love-explosion,.te-quiero').forEach(e => e.remove());
 
-            gs = { score: 0, room: checkpoint, kills: 0, toKill: 12 + checkpoint * 2, over: false, won: false, paused: true, goriActive: false, goriTimer: 0, goriSpeechTimer: 0, pulse: 0, floats: [], weapon: 0, satanic: false };
+            gs = { score: 0, room: checkpoint, kills: 0, toKill: 12 + checkpoint * 2, over: false, won: false, paused: true, goriActive: false, goriTimer: 0, goriSpeechTimer: 0, pulse: 0, floats: [], weapon: 0, satanic: false, combo: 0, comboTimer: 0, maxCombo: 0, piropoTimer: 0 };
             player = { x: WORLD.w / 2 - 16, y: WORLD.h / 2 - 16, w: 32, h: 32, speed: 2.5, dx: 0, dy: 0, frame: 0, aim: 0 };
             gorilla = { x: -200, y: -200, w: 56, h: 56, speed: 3, target: null, punch: 0, walk: 0 };
             boss = null;
@@ -1649,7 +1686,7 @@
         }
 
         // Floating text
-        function addFloat(x, y, text) { gs.floats.push({ x, y, text, life: 50, vy: -2 }); }
+        function addFloat(x, y, text, color) { gs.floats.push({ x, y, text, life: 50, vy: -2, color: color || null }); }
 
         function drawFloats() {
             gs.floats = gs.floats.filter(f => {
@@ -1658,10 +1695,19 @@
                 if (f.life > 0) {
                     const x = f.x - camera.x, y = f.y - camera.y;
                     ctx.save();
-                    ctx.font = 'bold 13px Courier New';
+                    // Bigger font for combo/special messages
+                    const isSpecial = f.text.length > 5;
+                    ctx.font = isSpecial ? 'bold 15px Courier New' : 'bold 13px Courier New';
                     ctx.textAlign = 'center';
-                    ctx.fillStyle = `rgba(255,255,255,${f.life / 50})`;
-                    ctx.strokeStyle = `rgba(0,0,0,${f.life / 50})`;
+                    const alpha = f.life / 50;
+                    if (f.color) {
+                        ctx.shadowColor = f.color;
+                        ctx.shadowBlur = 8;
+                        ctx.fillStyle = f.color.replace(')', `,${alpha})`).replace('rgb', 'rgba') || `rgba(255,255,100,${alpha})`;
+                    } else {
+                        ctx.fillStyle = `rgba(255,255,255,${alpha})`;
+                    }
+                    ctx.strokeStyle = `rgba(0,0,0,${alpha})`;
                     ctx.lineWidth = 2;
                     ctx.strokeText(f.text, x, y);
                     ctx.fillText(f.text, x, y);
@@ -1670,6 +1716,40 @@
                 }
                 return false;
             });
+        }
+
+        // 🔥 Draw combo counter HUD
+        function drawComboHUD() {
+            if (gs.combo >= 3) {
+                ctx.save();
+                const comboText = `${gs.combo}x COMBO`;
+                // Find current tier
+                let tier = COMBO_MSGS[0];
+                for (let i = COMBO_MSGS.length - 1; i >= 0; i--) {
+                    if (gs.combo >= COMBO_MSGS[i].min) { tier = COMBO_MSGS[i]; break; }
+                }
+                const pulse = 1 + Math.sin(Date.now() * 0.01) * 0.1;
+                ctx.font = `bold ${Math.floor(22 * pulse)}px Courier New`;
+                ctx.textAlign = 'center';
+                ctx.shadowColor = tier.color;
+                ctx.shadowBlur = 15;
+                ctx.fillStyle = tier.color;
+                ctx.strokeStyle = '#000';
+                ctx.lineWidth = 3;
+                ctx.strokeText(comboText, canvas.width / 2, 60);
+                ctx.fillText(comboText, canvas.width / 2, 60);
+                // Smaller tier text below
+                ctx.font = 'bold 12px Courier New';
+                ctx.fillStyle = '#fff';
+                ctx.strokeText(tier.text, canvas.width / 2, 78);
+                ctx.fillText(tier.text, canvas.width / 2, 78);
+                ctx.restore();
+            }
+            // Combo timer decay
+            if (gs.comboTimer > 0) {
+                gs.comboTimer--;
+                if (gs.comboTimer <= 0) gs.combo = 0;
+            }
         }
 
         // Gorilla speech
@@ -1746,8 +1826,16 @@
                         zombies = zombies.filter(z => z !== target);
                         gs.score += 5;
                         gs.kills++;
-                        addFloat(target.x, target.y, '+5');
-                        showSpeech(GORILLA_PHRASES[Math.floor(Math.random() * GORILLA_PHRASES.length)]);
+                        // Zombie death cry when gorilla kills
+                        const cry = ZOMBIE_DEATHS[Math.floor(Math.random() * ZOMBIE_DEATHS.length)];
+                        addFloat(target.x, target.y, Math.random() > 0.5 ? cry : '+5');
+                        addParticles(target.x + 8, target.y + 10, '#ff69b4', 5, 2, 25);
+                        // Alternate between insults and piropos
+                        const usePiropo = Math.random() > 0.65;
+                        showSpeech(usePiropo ? GORILLA_PIROPOS[Math.floor(Math.random() * GORILLA_PIROPOS.length)] : GORILLA_PHRASES[Math.floor(Math.random() * GORILLA_PHRASES.length)]);
+                        // Combo tracking for gorilla kills too
+                        gs.combo++;
+                        gs.comboTimer = 90;
                     }
                     updateUI();
                     checkRoom();
@@ -1968,9 +2056,32 @@
                 // Hit zombies
                 for (let i = zombies.length - 1; i >= 0; i--) {
                     if (collide(b, zombies[i])) {
-                        addFloat(zombies[i].x, zombies[i].y, '+1');
+                        // 💀 Zombie death cry
+                        const deathMsg = ZOMBIE_DEATHS[Math.floor(Math.random() * ZOMBIE_DEATHS.length)];
+                        addFloat(zombies[i].x, zombies[i].y, Math.random() > 0.6 ? deathMsg : '+1');
                         addParticles(zombies[i].x + 8, zombies[i].y + 10, '#44aa44', 8, 2, 25);
                         addParticles(zombies[i].x + 8, zombies[i].y + 10, '#882222', 5, 1.5, 20);
+
+                        // 🔥 Combo system
+                        gs.combo++;
+                        gs.comboTimer = 90; // ~1.5 seconds at 60fps
+                        if (gs.combo > gs.maxCombo) gs.maxCombo = gs.combo;
+                        // Check for combo milestone
+                        for (let c = COMBO_MSGS.length - 1; c >= 0; c--) {
+                            if (gs.combo === COMBO_MSGS[c].min) {
+                                addFloat(player.x, player.y - 30, COMBO_MSGS[c].text);
+                                // Combo explosion particles
+                                addParticles(player.x + 16, player.y + 16, COMBO_MSGS[c].color, 15, 3, 35);
+                                addParticles(player.x + 16, player.y + 16, '#ffff00', 8, 2, 20);
+                                break;
+                            }
+                        }
+
+                        // ❤️ Heart particles when gorilla active
+                        if (gs.goriActive) {
+                            addParticles(zombies[i].x + 8, zombies[i].y + 10, '#ff69b4', 4, 1.5, 30);
+                        }
+
                         zombies.splice(i, 1);
                         gs.score++;
                         gs.kills++;
@@ -2054,7 +2165,23 @@
             if (gs.goriActive) drawGorilla(gorilla.x, gorilla.y, gorilla.punch, gorilla.walk);
 
             drawFloats();
+            drawComboHUD();
             updateParticles();
+
+            // 🦍❤️ Gorilla piropo timer - random love phrases
+            if (gs.goriActive) {
+                gs.piropoTimer++;
+                if (gs.piropoTimer > 0 && gs.piropoTimer % 180 === 0 && Math.random() > 0.4) {
+                    showSpeech(GORILLA_PIROPOS[Math.floor(Math.random() * GORILLA_PIROPOS.length)]);
+                }
+                // Heart trail from gorilla
+                if (Math.random() > 0.85) {
+                    addParticles(gorilla.x + 28, gorilla.y - 10, '#ff69b4', 1, 0.5, 40);
+                }
+            } else {
+                gs.piropoTimer = 0;
+            }
+
             drawScanlines();
 
             requestAnimationFrame(update);
@@ -2101,7 +2228,22 @@
 
         // Keyboard
         const keys = {};
-        document.onkeydown = e => { keys[e.key] = true; if (e.key === ' ') { e.preventDefault(); fire(); } updateKeys(); };
+        document.onkeydown = e => {
+            keys[e.key] = true;
+            if (e.key === ' ') { e.preventDefault(); fire(); }
+            updateKeys();
+
+            // 🎮 Konami Code Easter Egg
+            if (e.key === KONAMI_CODE[konamiIndex]) {
+                konamiIndex++;
+                if (konamiIndex === KONAMI_CODE.length) {
+                    konamiIndex = 0;
+                    triggerKonamiEasterEgg();
+                }
+            } else {
+                konamiIndex = e.key === KONAMI_CODE[0] ? 1 : 0;
+            }
+        };
         document.onkeyup = e => { keys[e.key] = false; updateKeys(); };
 
         function updateKeys() {
@@ -2118,6 +2260,67 @@
         setInterval(spawnZombie, 700); // Era 1400, ahora el doble de zombis
         setInterval(spawnItem, 14000);
         setTimeout(spawnItem, 6000);
+
+        // 🎮 Konami Code Easter Egg Function
+        function triggerKonamiEasterEgg() {
+            // Create love overlay
+            const overlay = document.createElement('div');
+            overlay.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.85);z-index:9999;display:flex;align-items:center;justify-content:center;flex-direction:column;animation:fadeIn 0.5s ease;cursor:pointer;';
+            
+            const msg = document.createElement('div');
+            msg.innerHTML = `
+                <div style="text-align:center;color:#ff69b4;font-family:Courier New;padding:20px;">
+                    <div style="font-size:48px;margin-bottom:15px;">🦍❤️🎀</div>
+                    <div style="font-size:22px;font-weight:bold;color:#ff69b4;text-shadow:0 0 20px #ff69b4;margin-bottom:12px;">
+                        MENSAJE SECRETO DEL GORILÓN
+                    </div>
+                    <div style="font-size:16px;color:#ffb6c1;line-height:1.8;max-width:350px;margin:auto;">
+                        Hay una persona jugando esto<br>
+                        que es más hermosa que todas<br>
+                        las estrellas del universo ⭐<br><br>
+                        <span style="font-size:20px;color:#ff69b4;font-weight:bold;">
+                            Sí, eres tú mi amor 💕
+                        </span><br><br>
+                        <span style="font-size:14px;color:#dda0dd;">
+                            Este juego fue hecho con mucho amor<br>
+                            para la persona más especial del mundo 🌎
+                        </span>
+                    </div>
+                    <div style="font-size:36px;margin-top:15px;">💖✨💖</div>
+                    <div style="font-size:11px;color:#888;margin-top:10px;">(toca para cerrar)</div>
+                </div>
+            `;
+            overlay.appendChild(msg);
+            
+            // Floating hearts animation
+            for (let i = 0; i < 25; i++) {
+                const heart = document.createElement('div');
+                heart.innerText = ['💖','💕','💗','💝','❤️','🩷'][Math.floor(Math.random() * 6)];
+                heart.style.cssText = `position:absolute;font-size:${16 + Math.random() * 24}px;left:${Math.random() * 100}%;top:${Math.random() * 100}%;animation:float ${3 + Math.random() * 4}s ease-in-out infinite;opacity:${0.4 + Math.random() * 0.6};`;
+                overlay.appendChild(heart);
+            }
+            
+            // Add float animation
+            const style = document.createElement('style');
+            style.textContent = `
+                @keyframes float { 0%,100% { transform:translateY(0) rotate(0deg); } 50% { transform:translateY(-20px) rotate(10deg); } }
+                @keyframes fadeIn { from { opacity:0; } to { opacity:1; } }
+            `;
+            document.head.appendChild(style);
+            
+            overlay.onclick = () => { overlay.remove(); style.remove(); };
+            document.body.appendChild(overlay);
+            
+            // Bonus: activate gorilla for free!
+            if (!gs.goriActive && !gs.over && !gs.paused) {
+                gs.goriActive = true;
+                gs.goriTimer = 600;
+                gorilla.x = player.x + 40;
+                gorilla.y = player.y;
+                showSpeech("❤️ KONAMI CODE ACTIVADO ❤️ WUOM");
+                updateUI();
+            }
+        }
 
         init();
         requestAnimationFrame(update);
