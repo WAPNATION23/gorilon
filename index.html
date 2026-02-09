@@ -597,11 +597,11 @@
             if (loveInterval) clearInterval(loveInterval);
             document.querySelectorAll('.love-explosion,.te-quiero').forEach(e => e.remove());
 
-            gs = { score: 0, room: checkpoint, kills: 0, toKill: 20 + checkpoint * 3, over: false, won: false, paused: true, goriActive: true, goriTimer: 0, goriSpeechTimer: 0, pulse: 0, floats: [], weapon: 0, satanic: false, satTimer: 0, combo: 0, comboTimer: 0, maxCombo: 0, piropoTimer: 0 };
+            gs = { score: 0, room: checkpoint, kills: 0, toKill: 20 + checkpoint * 3, over: false, won: false, paused: true, goriActive: true, goriTimer: 0, goriSpeechTimer: 0, pulse: 0, floats: [], weapon: 0, satanic: false, satTimer: 0, combo: 0, comboTimer: 0, maxCombo: 0, piropoTimer: 0, shield: false, shieldTimer: 0 };
             player = { x: WORLD.w / 2 - 16, y: WORLD.h / 2 - 16, w: 32, h: 32, speed: 2.5, dx: 0, dy: 0, frame: 0, aim: 0 };
             gorilla = { x: WORLD.w / 2 + 30, y: WORLD.h / 2 - 16, w: 56, h: 56, speed: 2, target: null, punch: 0, walk: 0, attackCooldown: 0 };
             boss = null;
-            bullets = []; zombies = []; items = []; particles = []; miniBosses = [];
+            bullets = []; zombies = []; items = []; particles = []; miniBosses = []; shieldItems = [];
             genObstacles();
             updateUI();
             gameOverScreen.style.display = 'none';
@@ -739,6 +739,7 @@
             const w = WEAPONS[gs.weapon];
             weaponName.innerText = `${w.emoji} ${w.name}`;
             goriStatusEl.innerText = gs.satanic ? '¡SATÁNICO! 👹🔥' : '🦍 COMPAÑERO';
+            if (gs.shield) goriStatusEl.innerText += ' 🛡️';
             goriStatusEl.classList.toggle('active', true);
             goriStatusEl.classList.toggle('satanic', gs.satanic);
         }
@@ -2321,6 +2322,66 @@
             items.push({ x: 100 + Math.random() * (WORLD.w - 200), y: 100 + Math.random() * (WORLD.h - 200), w: 24, h: 24 });
         }
 
+        function spawnShield() {
+            if (gs.over || gs.paused || gs.won) return;
+            shieldItems.push({ x: 100 + Math.random() * (WORLD.w - 200), y: 100 + Math.random() * (WORLD.h - 200), w: 24, h: 24 });
+        }
+
+        // === DRAW SHIELD ITEM ===
+        function drawShieldItem(sx, sy, size, pulse) {
+            const x = sx - camera.x, y = sy - camera.y;
+            const glow = Math.sin(pulse * 0.08) * 0.5 + 0.5;
+            const scale = 1 + glow * 0.2;
+
+            ctx.save();
+            ctx.translate(x + size / 2, y + size / 2);
+            ctx.scale(scale, scale);
+
+            // Outer glow ring (cyan/blue)
+            ctx.shadowColor = '#00ccff';
+            ctx.shadowBlur = 12 + glow * 12;
+            ctx.strokeStyle = `rgba(0, 200, 255, ${0.3 + glow * 0.4})`;
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.arc(0, 0, size * 0.7, 0, Math.PI * 2);
+            ctx.stroke();
+
+            // Shield shape (rounded triangle / badge)
+            const grad = ctx.createRadialGradient(0, -2, 2, 0, 0, size * 0.5);
+            grad.addColorStop(0, '#66eeff');
+            grad.addColorStop(1, '#0088cc');
+            ctx.fillStyle = grad;
+            ctx.strokeStyle = '#005577';
+            ctx.lineWidth = 1.5;
+            ctx.beginPath();
+            ctx.moveTo(0, -size * 0.45);
+            ctx.bezierCurveTo(size * 0.5, -size * 0.35, size * 0.45, size * 0.1, 0, size * 0.45);
+            ctx.bezierCurveTo(-size * 0.45, size * 0.1, -size * 0.5, -size * 0.35, 0, -size * 0.45);
+            ctx.closePath();
+            ctx.fill();
+            ctx.stroke();
+
+            // Inner highlight
+            ctx.fillStyle = 'rgba(255,255,255,0.4)';
+            ctx.beginPath();
+            ctx.ellipse(0, -size * 0.15, size * 0.15, size * 0.1, 0, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Shield emoji
+            ctx.shadowBlur = 0;
+            ctx.font = `${size * 0.35}px serif`;
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText('🛡️', 0, 2);
+
+            ctx.restore();
+
+            // Blue sparkle particles
+            if (Math.random() > 0.8) {
+                addParticles(sx + size / 2, sy + size / 2, Math.random() > 0.5 ? '#00ccff' : '#0088ff', 1, 0.6, 15);
+            }
+        }
+
         // Fire weapon
         let lastFire = 0;
         function fire() {
@@ -2642,7 +2703,16 @@
                     else { z.x += (dy / dist) * z.speed * 0.5; z.y += (-dx / dist) * z.speed * 0.5; }
                 }
                 drawZombie(z.x, z.y, z.frame);
-                if (collide(z, player)) showGameOver();
+                if (collide(z, player)) {
+                    if (gs.shield) {
+                        // Shield absorbs hit - push zombie back and flash
+                        const pushDx = z.x - player.x, pushDy = z.y - player.y;
+                        const pushDist = Math.hypot(pushDx, pushDy) || 1;
+                        z.x += (pushDx / pushDist) * 30;
+                        z.y += (pushDy / pushDist) * 30;
+                        addParticles(z.x + z.w/2, z.y + z.h/2, '#00ccff', 5, 2, 15);
+                    } else showGameOver();
+                }
             });
 
             // Boss
@@ -2656,7 +2726,11 @@
                     boss.y += (dy / dist) * boss.speed;
                 }
                 drawBoss(boss);
-                if (collide(boss, player)) showGameOver();
+                if (collide(boss, player)) {
+                    if (gs.shield) {
+                        addParticles(player.x + 16, player.y + 16, '#00ccff', 8, 3, 15);
+                    } else showGameOver();
+                }
             }
 
             // Items - Star = DEMONIC MODE for gorilla
@@ -2675,6 +2749,21 @@
                 return true;
             });
 
+            // Shield items
+            shieldItems = shieldItems.filter(item => {
+                drawShieldItem(item.x, item.y, item.w, gs.pulse);
+                if (collide(item, player)) {
+                    gs.shield = true;
+                    gs.shieldTimer = 480; // ~8 seconds of immunity
+                    showSpeech("🛡️ ¡ESCUDO ACTIVADO! ¡SOY INVENCIBLE WEÓN! 🛡️");
+                    addParticles(player.x + 16, player.y + 16, '#00ccff', 20, 3, 30);
+                    addParticles(player.x + 16, player.y + 16, '#0088ff', 15, 2, 25);
+                    updateUI();
+                    return false;
+                }
+                return true;
+            });
+
             // Mini-bosses
             miniBosses = miniBosses.filter(mb => {
                 mb.frame++;
@@ -2684,12 +2773,46 @@
                 mb.x += (dx / dist) * mb.speed;
                 mb.y += (dy / dist) * mb.speed;
                 drawMiniBoss(mb);
-                if (collide(mb, player)) { showGameOver(); return false; }
+                if (collide(mb, player)) {
+                    if (gs.shield) {
+                        const pushDx = mb.x - player.x, pushDy = mb.y - player.y;
+                        const pushDist = Math.hypot(pushDx, pushDy) || 1;
+                        mb.x += (pushDx / pushDist) * 20;
+                        mb.y += (pushDy / pushDist) * 20;
+                        addParticles(mb.x + mb.w/2, mb.y + mb.h/2, '#00ccff', 5, 2, 15);
+                    } else { showGameOver(); return false; }
+                }
                 return mb.hp > 0;
             });
 
             updateGorilla();
             updateSpeech();
+
+            // Shield visual around player
+            if (gs.shield) {
+                gs.shieldTimer--;
+                const shieldAlpha = gs.shieldTimer < 90 ? 0.2 + 0.3 * Math.sin(gs.shieldTimer * 0.3) : 0.35;
+                const sx = player.x + player.w / 2 - camera.x;
+                const sy = player.y + player.h / 2 - camera.y;
+                const shieldGrad = ctx.createRadialGradient(sx, sy, 8, sx, sy, 28);
+                shieldGrad.addColorStop(0, `rgba(0, 200, 255, ${shieldAlpha * 0.3})`);
+                shieldGrad.addColorStop(0.7, `rgba(0, 150, 255, ${shieldAlpha})`);
+                shieldGrad.addColorStop(1, `rgba(0, 100, 255, 0)`);
+                ctx.fillStyle = shieldGrad;
+                ctx.beginPath();
+                ctx.arc(sx, sy, 28, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.strokeStyle = `rgba(0, 220, 255, ${shieldAlpha + 0.2})`;
+                ctx.lineWidth = 1.5;
+                ctx.stroke();
+                // Shield sparkles
+                if (Math.random() > 0.7) addParticles(player.x + 16 + (Math.random()-0.5)*30, player.y + 16 + (Math.random()-0.5)*30, '#00ccff', 1, 0.3, 12);
+                if (gs.shieldTimer <= 0) {
+                    gs.shield = false;
+                    showSpeech("🛡️💔 Se acabó el escudo... ¡cuidado!");
+                    updateUI();
+                }
+            }
 
             drawHelloKitty(player.x, player.y, player.frame, player.aim - Math.PI / 2);
 
@@ -2787,6 +2910,8 @@
         setInterval(spawnZombie, 700);
         setInterval(spawnItem, 14000);
         setTimeout(spawnItem, 6000);
+        setInterval(spawnShield, 20000);
+        setTimeout(spawnShield, 10000);
         // Mini-boss spawner - every 25 seconds
         setInterval(spawnMiniBoss, 25000);
         setTimeout(spawnMiniBoss, 15000); // First one at 15s
