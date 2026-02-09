@@ -720,7 +720,9 @@
                     else if (type === 'car') { w = 70; h = 35; }
                     else if (type === 'blood') { w = 40; h = 40; }
                     else if (type === 'barrel') { w = 25; h = 30; }
-                    obstacles.push({ x, y, w, h, type });
+                    // Blood pools and trees don't block movement
+                    const noBlock = (type === 'blood');
+                    obstacles.push({ x, y, w, h, type, noCollide: noBlock });
                 }
             }
             // Add some decorative blood pools (non-blocking)
@@ -1599,110 +1601,284 @@
 
                 ctx.save();
 
+                // Drop shadow for all obstacles
+                if (!o.noCollide) {
+                    ctx.fillStyle = 'rgba(0,0,0,0.25)';
+                    ctx.beginPath();
+                    ctx.ellipse(x + o.w / 2 + 3, y + o.h + 2, o.w / 2.2, 5, 0, 0, Math.PI * 2);
+                    ctx.fill();
+                }
+
                 switch (o.type) {
-                    case 'ruin': // Ruinas de edificio
-                        ctx.fillStyle = '#2a2a2a';
-                        ctx.fillRect(x, y, o.w, o.h);
-                        // Grietas
-                        ctx.strokeStyle = '#1a1a1a';
+                    case 'ruin': { // Ruinas de edificio - con gradiente y más detalle
+                        const ruinGrad = ctx.createLinearGradient(x, y, x, y + o.h);
+                        ruinGrad.addColorStop(0, '#3a3a3a');
+                        ruinGrad.addColorStop(1, '#1a1a1a');
+                        ctx.fillStyle = ruinGrad;
+                        // Forma irregular (no perfectamente rectangular)
+                        ctx.beginPath();
+                        ctx.moveTo(x + 3, y + o.h);
+                        ctx.lineTo(x, y + 8);
+                        ctx.lineTo(x + 5, y);
+                        ctx.lineTo(x + o.w - 8, y + 3);
+                        ctx.lineTo(x + o.w, y + 10);
+                        ctx.lineTo(x + o.w - 2, y + o.h);
+                        ctx.closePath();
+                        ctx.fill();
+                        ctx.strokeStyle = '#0a0a0a';
+                        ctx.lineWidth = 1.5;
+                        ctx.stroke();
+                        // Grietas profundas
+                        ctx.strokeStyle = 'rgba(0,0,0,0.5)';
+                        ctx.lineWidth = 1.5;
+                        ctx.beginPath();
+                        ctx.moveTo(x + 12, y + 2); ctx.lineTo(x + 18, y + o.h * 0.4);
+                        ctx.lineTo(x + 15, y + o.h * 0.7); ctx.lineTo(x + 22, y + o.h);
+                        ctx.stroke();
+                        ctx.beginPath();
+                        ctx.moveTo(x + o.w - 10, y + 5); ctx.lineTo(x + o.w - 18, y + o.h * 0.5);
+                        ctx.stroke();
+                        // Ventanas rotas con brillo interno
+                        ctx.fillStyle = '#050505';
+                        ctx.fillRect(x + 8, y + 10, 12, 14);
+                        ctx.fillRect(x + o.w - 22, y + 10, 12, 14);
+                        ctx.fillStyle = 'rgba(40, 60, 40, 0.15)';
+                        ctx.fillRect(x + 9, y + 11, 4, 5);
+                        ctx.fillRect(x + o.w - 21, y + 11, 4, 5);
+                        // Ladrillos expuestos
+                        ctx.fillStyle = '#4a2a1a';
+                        ctx.fillRect(x + o.w - 15, y + o.h - 12, 8, 4);
+                        ctx.fillRect(x + o.w - 12, y + o.h - 7, 6, 3);
+                        ctx.fillRect(x + 3, y + o.h - 10, 7, 3);
+                        break;
+                    }
+
+                    case 'tree': { // Árbol quemado - con corteza texturizada
+                        // Tronco con gradiente
+                        const trunkGrad = ctx.createLinearGradient(x + 10, y + 20, x + 20, y + 20);
+                        trunkGrad.addColorStop(0, '#2a1a08');
+                        trunkGrad.addColorStop(0.5, '#1a1208');
+                        trunkGrad.addColorStop(1, '#0f0a04');
+                        ctx.fillStyle = trunkGrad;
+                        ctx.beginPath();
+                        ctx.moveTo(x + 9, y + 58);
+                        ctx.lineTo(x + 11, y + 22);
+                        ctx.lineTo(x + 14, y + 18);
+                        ctx.lineTo(x + 20, y + 20);
+                        ctx.lineTo(x + 22, y + 60);
+                        ctx.closePath();
+                        ctx.fill();
+                        // Raíces
+                        ctx.strokeStyle = '#1a1208';
                         ctx.lineWidth = 2;
                         ctx.beginPath();
-                        ctx.moveTo(x + 10, y); ctx.lineTo(x + 20, y + o.h);
-                        ctx.moveTo(x + o.w - 15, y); ctx.lineTo(x + o.w - 25, y + o.h / 2);
+                        ctx.moveTo(x + 9, y + 56); ctx.lineTo(x + 3, y + 62);
+                        ctx.moveTo(x + 22, y + 58); ctx.lineTo(x + 27, y + 64);
                         ctx.stroke();
-                        // Ventanas rotas
-                        ctx.fillStyle = '#0a0a0a';
-                        ctx.fillRect(x + 8, y + 10, 12, 15);
-                        ctx.fillRect(x + o.w - 22, y + 10, 12, 15);
-                        // Borde
-                        ctx.strokeStyle = '#1a1a1a';
-                        ctx.strokeRect(x, y, o.w, o.h);
-                        break;
-
-                    case 'tree': // Árbol quemado
-                        // Tronco
-                        ctx.fillStyle = '#1a1208';
-                        ctx.fillRect(x + 10, y + 20, 10, 40);
-                        // Ramas muertas
+                        // Ramas muertas con variable thickness
                         ctx.strokeStyle = '#2a1a0a';
                         ctx.lineWidth = 3;
                         ctx.beginPath();
-                        ctx.moveTo(x + 15, y + 25); ctx.lineTo(x + 5, y + 10);
-                        ctx.moveTo(x + 15, y + 25); ctx.lineTo(x + 25, y + 5);
-                        ctx.moveTo(x + 15, y + 35); ctx.lineTo(x, y + 30);
-                        ctx.moveTo(x + 15, y + 35); ctx.lineTo(x + 28, y + 28);
+                        ctx.moveTo(x + 15, y + 25); ctx.lineTo(x + 4, y + 8);
                         ctx.stroke();
-                        break;
-
-                    case 'tomb': // Lápida
-                        ctx.fillStyle = '#3a3a3a';
-                        // Base
-                        ctx.fillRect(x + 5, y + 35, 25, 10);
-                        // Lápida
+                        ctx.lineWidth = 2.5;
                         ctx.beginPath();
-                        ctx.moveTo(x + 7, y + 35);
-                        ctx.lineTo(x + 7, y + 12);
-                        ctx.quadraticCurveTo(x + 17, y, x + 28, y + 12);
-                        ctx.lineTo(x + 28, y + 35);
-                        ctx.fill();
-                        // Cruz o RIP
-                        ctx.fillStyle = '#1a1a1a';
-                        ctx.font = '8px Courier';
-                        ctx.fillText('RIP', x + 9, y + 25);
-                        break;
-
-                    case 'car': // Auto destruido
-                        ctx.fillStyle = '#2a2a2a';
-                        // Cuerpo
-                        ctx.fillRect(x, y + 10, o.w, 20);
-                        // Techo aplastado
-                        ctx.fillRect(x + 15, y, 35, 12);
-                        // Ruedas
-                        ctx.fillStyle = '#1a1a1a';
+                        ctx.moveTo(x + 15, y + 23); ctx.lineTo(x + 26, y + 4);
+                        ctx.stroke();
+                        ctx.lineWidth = 2;
                         ctx.beginPath();
-                        ctx.arc(x + 12, y + 32, 8, 0, Math.PI * 2);
-                        ctx.arc(x + o.w - 12, y + 32, 8, 0, Math.PI * 2);
+                        ctx.moveTo(x + 14, y + 33); ctx.lineTo(x, y + 28);
+                        ctx.moveTo(x + 16, y + 35); ctx.lineTo(x + 29, y + 26);
+                        ctx.stroke();
+                        // Carbón / hollín
+                        ctx.fillStyle = 'rgba(0,0,0,0.2)';
+                        ctx.beginPath();
+                        ctx.ellipse(x + 15, y + 60, 8, 3, 0, 0, Math.PI * 2);
                         ctx.fill();
-                        // Fuego/humo
-                        if (Math.random() > 0.7) {
-                            ctx.fillStyle = 'rgba(100, 100, 100, 0.5)';
+                        // Occasional ember
+                        if (Math.random() > 0.92) {
+                            ctx.fillStyle = 'rgba(255, 100, 0, 0.6)';
                             ctx.beginPath();
-                            ctx.arc(x + 35, y - 5, 8 + Math.random() * 5, 0, Math.PI * 2);
+                            ctx.arc(x + 5 + Math.random() * 20, y + 5 + Math.random() * 15, 1.5, 0, Math.PI * 2);
                             ctx.fill();
                         }
                         break;
+                    }
 
-                    case 'blood': // Charco de sangre (sólido)
-                        ctx.fillStyle = '#4a0a0a';
+                    case 'tomb': { // Lápida - más detallada
+                        // Base de piedra
+                        ctx.fillStyle = '#2a2a2a';
+                        ctx.fillRect(x + 3, y + 36, 29, 9);
+                        // Lápida con gradiente
+                        const tombGrad = ctx.createLinearGradient(x + 7, y, x + 28, y + 35);
+                        tombGrad.addColorStop(0, '#4a4a4a');
+                        tombGrad.addColorStop(1, '#2a2a2a');
+                        ctx.fillStyle = tombGrad;
                         ctx.beginPath();
-                        ctx.ellipse(x + o.w / 2, y + o.h / 2, o.w / 2, o.h / 3, 0, 0, Math.PI * 2);
+                        ctx.moveTo(x + 7, y + 36);
+                        ctx.lineTo(x + 7, y + 13);
+                        ctx.quadraticCurveTo(x + 17, y - 2, x + 28, y + 13);
+                        ctx.lineTo(x + 28, y + 36);
                         ctx.fill();
-                        ctx.fillStyle = '#3a0505';
+                        ctx.strokeStyle = '#1a1a1a';
+                        ctx.lineWidth = 1;
+                        ctx.stroke();
+                        // Highlight edge
+                        ctx.strokeStyle = 'rgba(255,255,255,0.08)';
                         ctx.beginPath();
-                        ctx.ellipse(x + o.w / 2 + 5, y + o.h / 2 + 3, o.w / 4, o.h / 5, 0.3, 0, Math.PI * 2);
+                        ctx.moveTo(x + 8, y + 35);
+                        ctx.lineTo(x + 8, y + 14);
+                        ctx.quadraticCurveTo(x + 17, y, x + 27, y + 14);
+                        ctx.stroke();
+                        // RIP text
+                        ctx.fillStyle = '#0a0a0a';
+                        ctx.font = 'bold 9px Courier';
+                        ctx.textAlign = 'center';
+                        ctx.fillText('RIP', x + 17, y + 22);
+                        // Cruz pequeña
+                        ctx.strokeStyle = '#1a1a1a';
+                        ctx.lineWidth = 1.5;
+                        ctx.beginPath();
+                        ctx.moveTo(x + 17, y + 7); ctx.lineTo(x + 17, y + 15);
+                        ctx.moveTo(x + 14, y + 10); ctx.lineTo(x + 20, y + 10);
+                        ctx.stroke();
+                        // Musgo
+                        ctx.fillStyle = 'rgba(30, 60, 20, 0.3)';
+                        ctx.beginPath();
+                        ctx.ellipse(x + 10, y + 34, 5, 3, 0, 0, Math.PI);
                         ctx.fill();
                         break;
+                    }
 
-                    case 'barrel': // Barril tóxico
-                        ctx.fillStyle = '#3a3a00';
-                        ctx.fillRect(x, y + 3, o.w, o.h - 6);
+                    case 'car': { // Auto destruido - más realista
+                        // Sombra del auto
+                        ctx.fillStyle = 'rgba(0,0,0,0.3)';
+                        ctx.beginPath();
+                        ctx.ellipse(x + o.w / 2, y + 36, o.w / 2 + 3, 6, 0, 0, Math.PI * 2);
+                        ctx.fill();
+                        // Cuerpo con gradiente
+                        const carGrad = ctx.createLinearGradient(x, y + 10, x, y + 30);
+                        carGrad.addColorStop(0, '#353535');
+                        carGrad.addColorStop(1, '#1a1a1a');
+                        ctx.fillStyle = carGrad;
+                        ctx.fillRect(x + 2, y + 10, o.w - 4, 20);
+                        // Techo aplastado
+                        ctx.fillStyle = '#2a2a2a';
+                        ctx.beginPath();
+                        ctx.moveTo(x + 15, y + 10);
+                        ctx.lineTo(x + 18, y + 2);
+                        ctx.lineTo(x + 48, y);
+                        ctx.lineTo(x + 50, y + 10);
+                        ctx.closePath();
+                        ctx.fill();
+                        // Ventanas rotas
+                        ctx.fillStyle = 'rgba(40, 60, 80, 0.3)';
+                        ctx.fillRect(x + 20, y + 3, 10, 7);
+                        ctx.fillRect(x + 35, y + 2, 10, 7);
+                        // Ruedas
+                        ctx.fillStyle = '#111';
+                        ctx.beginPath();
+                        ctx.arc(x + 14, y + 32, 7, 0, Math.PI * 2);
+                        ctx.arc(x + o.w - 14, y + 32, 7, 0, Math.PI * 2);
+                        ctx.fill();
+                        ctx.fillStyle = '#222';
+                        ctx.beginPath();
+                        ctx.arc(x + 14, y + 32, 3, 0, Math.PI * 2);
+                        ctx.arc(x + o.w - 14, y + 32, 3, 0, Math.PI * 2);
+                        ctx.fill();
+                        // Oxido
+                        ctx.fillStyle = 'rgba(80, 40, 10, 0.3)';
+                        ctx.beginPath();
+                        ctx.ellipse(x + 30, y + 18, 8, 4, 0.2, 0, Math.PI * 2);
+                        ctx.fill();
+                        // Humo/fuego
+                        if (Math.random() > 0.6) {
+                            ctx.fillStyle = `rgba(80, 80, 80, ${0.2 + Math.random() * 0.3})`;
+                            ctx.beginPath();
+                            ctx.arc(x + 10 + Math.random() * 10, y - 3, 5 + Math.random() * 6, 0, Math.PI * 2);
+                            ctx.fill();
+                        }
+                        break;
+                    }
+
+                    case 'blood': { // Charco de sangre
+                        ctx.fillStyle = 'rgba(60, 8, 8, 0.6)';
+                        ctx.beginPath();
+                        ctx.ellipse(x + o.w / 2, y + o.h / 2, o.w / 2, o.h / 3, 0.1, 0, Math.PI * 2);
+                        ctx.fill();
+                        // Reflection/shine
+                        ctx.fillStyle = 'rgba(100, 15, 15, 0.3)';
+                        ctx.beginPath();
+                        ctx.ellipse(x + o.w / 2 - 3, y + o.h / 2 - 2, o.w / 5, o.h / 7, -0.2, 0, Math.PI * 2);
+                        ctx.fill();
+                        ctx.fillStyle = 'rgba(40, 4, 4, 0.4)';
+                        ctx.beginPath();
+                        ctx.ellipse(x + o.w / 2 + 6, y + o.h / 2 + 4, o.w / 4, o.h / 5, 0.3, 0, Math.PI * 2);
+                        ctx.fill();
+                        break;
+                    }
+
+                    case 'barrel': { // Barril tóxico - con brillo y goteo
+                        // Barril body con gradiente cilíndrico
+                        const barrelGrad = ctx.createLinearGradient(x, y, x + o.w, y);
+                        barrelGrad.addColorStop(0, '#2a2a00');
+                        barrelGrad.addColorStop(0.4, '#4a4a00');
+                        barrelGrad.addColorStop(0.6, '#3a3a00');
+                        barrelGrad.addColorStop(1, '#1a1a00');
+                        ctx.fillStyle = barrelGrad;
+                        ctx.beginPath();
+                        ctx.ellipse(x + o.w / 2, y + 4, o.w / 2, 4, 0, 0, Math.PI * 2);
+                        ctx.fill();
+                        ctx.fillRect(x, y + 4, o.w, o.h - 8);
+                        ctx.beginPath();
+                        ctx.ellipse(x + o.w / 2, y + o.h - 4, o.w / 2, 4, 0, 0, Math.PI * 2);
+                        ctx.fill();
+                        // Bandas metálicas
+                        ctx.strokeStyle = '#5a5a00';
+                        ctx.lineWidth = 1.5;
+                        ctx.beginPath();
+                        ctx.moveTo(x, y + 8); ctx.lineTo(x + o.w, y + 8);
+                        ctx.moveTo(x, y + o.h - 8); ctx.lineTo(x + o.w, y + o.h - 8);
+                        ctx.stroke();
+                        // Símbolo tóxico (triángulo de peligro)
+                        ctx.fillStyle = '#aaa800';
+                        ctx.beginPath();
+                        ctx.moveTo(x + o.w / 2, y + o.h / 2 - 5);
+                        ctx.lineTo(x + o.w / 2 - 5, y + o.h / 2 + 4);
+                        ctx.lineTo(x + o.w / 2 + 5, y + o.h / 2 + 4);
+                        ctx.closePath();
+                        ctx.fill();
                         ctx.fillStyle = '#2a2a00';
-                        ctx.fillRect(x, y, o.w, 5);
-                        ctx.fillRect(x, y + o.h - 5, o.w, 5);
-                        // Símbolo tóxico
-                        ctx.fillStyle = '#8a8a00';
                         ctx.beginPath();
-                        ctx.arc(x + o.w / 2, y + o.h / 2, 6, 0, Math.PI * 2);
+                        ctx.arc(x + o.w / 2, y + o.h / 2 + 1, 2, 0, Math.PI * 2);
                         ctx.fill();
-                        // Goteo
-                        ctx.fillStyle = '#5a5a00';
-                        ctx.fillRect(x + o.w - 3, y + o.h, 4, 8 + Math.random() * 5);
+                        // Goteo tóxico animado
+                        ctx.fillStyle = 'rgba(120, 180, 0, 0.6)';
+                        const dripH = 6 + Math.sin(Date.now() * 0.003) * 4;
+                        ctx.beginPath();
+                        ctx.moveTo(x + o.w - 2, y + o.h - 4);
+                        ctx.quadraticCurveTo(x + o.w, y + o.h + dripH, x + o.w - 4, y + o.h + dripH + 2);
+                        ctx.quadraticCurveTo(x + o.w - 6, y + o.h + dripH, x + o.w - 4, y + o.h - 4);
+                        ctx.fill();
+                        // Toxic glow
+                        ctx.shadowColor = '#aaff00';
+                        ctx.shadowBlur = 4;
+                        ctx.fillStyle = 'rgba(120, 200, 0, 0.1)';
+                        ctx.beginPath();
+                        ctx.arc(x + o.w / 2, y + o.h + 3, 8, 0, Math.PI * 2);
+                        ctx.fill();
+                        ctx.shadowBlur = 0;
                         break;
+                    }
 
                     case 'decor_blood': // Sangre decorativa (no bloquea)
-                        ctx.fillStyle = 'rgba(80, 10, 10, 0.4)';
+                        ctx.fillStyle = 'rgba(70, 8, 8, 0.35)';
                         ctx.beginPath();
-                        ctx.ellipse(x + o.w / 2, y + o.h / 2, o.w / 2, o.h / 3, Math.random(), 0, Math.PI * 2);
+                        ctx.ellipse(x + o.w / 2, y + o.h / 2, o.w / 2, o.h / 3, o.x * 0.01, 0, Math.PI * 2);
+                        ctx.fill();
+                        ctx.fillStyle = 'rgba(90, 5, 5, 0.2)';
+                        ctx.beginPath();
+                        ctx.ellipse(x + o.w / 2 + 4, y + o.h / 2 - 2, o.w / 4, o.h / 5, -0.3, 0, Math.PI * 2);
                         ctx.fill();
                         break;
                 }
@@ -1776,71 +1952,108 @@
             const startX = Math.floor(camera.x / tileSize) * tileSize;
             const startY = Math.floor(camera.y / tileSize) * tileSize;
 
+            // Room-based color themes
+            const roomColors = [
+                { dark: [30, 28, 28], light: [38, 35, 35] },   // R1: gris oscuro
+                { dark: [25, 30, 25], light: [32, 38, 32] },   // R2: verde hospital
+                { dark: [32, 25, 25], light: [40, 32, 32] },   // R3: rojo sangre
+                { dark: [28, 22, 32], light: [36, 28, 40] },   // R4: púrpura boss
+                { dark: [22, 28, 32], light: [28, 35, 40] },   // R5: azul frío
+                { dark: [32, 28, 20], light: [40, 35, 26] },   // R6: oxidado
+                { dark: [20, 12, 12], light: [28, 16, 16] },   // R7: infierno
+            ];
+            const rc = roomColors[Math.min(gs.room - 1, 6)];
+
             for (let x = startX - tileSize; x < camera.x + canvas.width + tileSize; x += tileSize) {
                 for (let y = startY - tileSize; y < camera.y + canvas.height + tileSize; y += tileSize) {
                     const screenX = x - camera.x;
                     const screenY = y - camera.y;
 
-                    // Checkered pattern with subtle color variation
                     const isDark = ((x / tileSize + y / tileSize) % 2) === 0;
                     const seed = Math.abs((x * 7 + y * 13)) % 100;
-                    const tint = seed % 8;
-                    ctx.fillStyle = isDark ? `rgb(${28 + tint}, ${28 + tint}, ${28 + tint})` : `rgb(${35 + tint}, ${35 + tint}, ${35 + tint})`;
+                    const tint = seed % 6;
+                    const base = isDark ? rc.dark : rc.light;
+                    ctx.fillStyle = `rgb(${base[0] + tint}, ${base[1] + tint}, ${base[2] + tint})`;
                     ctx.fillRect(screenX, screenY, tileSize, tileSize);
 
                     // Grout lines
-                    ctx.strokeStyle = '#0a0a0a';
-                    ctx.lineWidth = 2;
+                    ctx.strokeStyle = 'rgba(0,0,0,0.6)';
+                    ctx.lineWidth = 1.5;
                     ctx.strokeRect(screenX, screenY, tileSize, tileSize);
 
-                    // Inner tile highlight (subtle 3D)
-                    ctx.strokeStyle = isDark ? 'rgba(255,255,255,0.03)' : 'rgba(255,255,255,0.05)';
+                    // Inner tile highlight (subtle 3D bevel)
+                    ctx.strokeStyle = isDark ? 'rgba(255,255,255,0.04)' : 'rgba(255,255,255,0.06)';
                     ctx.lineWidth = 1;
                     ctx.beginPath();
                     ctx.moveTo(screenX + 2, screenY + tileSize - 2);
                     ctx.lineTo(screenX + 2, screenY + 2);
                     ctx.lineTo(screenX + tileSize - 2, screenY + 2);
                     ctx.stroke();
+                    // Bottom-right shadow bevel
+                    ctx.strokeStyle = 'rgba(0,0,0,0.15)';
+                    ctx.beginPath();
+                    ctx.moveTo(screenX + tileSize - 2, screenY + 2);
+                    ctx.lineTo(screenX + tileSize - 2, screenY + tileSize - 2);
+                    ctx.lineTo(screenX + 2, screenY + tileSize - 2);
+                    ctx.stroke();
 
                     // Cracks (seeded by position)
-                    if (seed < 15) {
-                        ctx.strokeStyle = '#0f0f0f';
+                    if (seed < 12) {
+                        ctx.strokeStyle = 'rgba(0,0,0,0.4)';
                         ctx.lineWidth = 1;
                         ctx.beginPath();
-                        ctx.moveTo(screenX + 10, screenY + 20);
-                        ctx.lineTo(screenX + 30, screenY + 35);
-                        ctx.lineTo(screenX + 45, screenY + 50);
+                        ctx.moveTo(screenX + 10, screenY + 15);
+                        ctx.lineTo(screenX + 25, screenY + 30);
+                        ctx.lineTo(screenX + 22, screenY + 45);
+                        ctx.lineTo(screenX + 40, screenY + 55);
                         ctx.stroke();
                     }
-                    if (seed > 20 && seed < 28) {
-                        ctx.strokeStyle = '#111';
+                    if (seed > 22 && seed < 28) {
+                        ctx.strokeStyle = 'rgba(0,0,0,0.3)';
                         ctx.lineWidth = 0.8;
                         ctx.beginPath();
                         ctx.moveTo(screenX + 50, screenY + 5);
-                        ctx.lineTo(screenX + 35, screenY + 30);
-                        ctx.lineTo(screenX + 20, screenY + 55);
+                        ctx.lineTo(screenX + 38, screenY + 22);
+                        ctx.lineTo(screenX + 42, screenY + 35);
+                        ctx.lineTo(screenX + 25, screenY + 52);
                         ctx.stroke();
                     }
 
-                    // Blood stains
-                    if (seed > 85 && seed < 95) {
-                        ctx.fillStyle = 'rgba(60, 10, 10, 0.5)';
+                    // Blood stains (room 3+ more blood)
+                    if (seed > 85 && seed < (85 + gs.room * 1.5)) {
+                        ctx.fillStyle = `rgba(60, 8, 8, ${0.3 + gs.room * 0.03})`;
                         ctx.beginPath();
-                        ctx.ellipse(screenX + 30, screenY + 30, 15, 10, seed * 0.1, 0, Math.PI * 2);
+                        ctx.ellipse(screenX + 30, screenY + 30, 14, 9, seed * 0.1, 0, Math.PI * 2);
                         ctx.fill();
-                        // Blood splatter detail
-                        ctx.fillStyle = 'rgba(80, 5, 5, 0.3)';
+                        ctx.fillStyle = 'rgba(80, 5, 5, 0.2)';
                         ctx.beginPath();
-                        ctx.arc(screenX + 18, screenY + 22, 5, 0, Math.PI * 2);
+                        ctx.arc(screenX + 18, screenY + 22, 4, 0, Math.PI * 2);
+                        ctx.fill();
+                        // Blood drops
+                        ctx.fillStyle = 'rgba(90, 5, 5, 0.25)';
+                        ctx.beginPath();
+                        ctx.arc(screenX + 42, screenY + 38, 3, 0, Math.PI * 2);
                         ctx.fill();
                     }
 
-                    // Dirt/debris marks
-                    if (seed > 40 && seed < 48) {
-                        ctx.fillStyle = 'rgba(40, 35, 25, 0.3)';
+                    // Dirt/moss marks
+                    if (seed > 40 && seed < 50) {
+                        ctx.fillStyle = `rgba(${30 + rc.dark[1]}, ${35 + rc.dark[1]}, ${20 + rc.dark[2]}, 0.2)`;
                         ctx.beginPath();
-                        ctx.ellipse(screenX + 20 + seed % 20, screenY + 15 + seed % 15, 8, 5, seed * 0.05, 0, Math.PI * 2);
+                        ctx.ellipse(screenX + 20 + seed % 20, screenY + 15 + seed % 15, 10, 6, seed * 0.05, 0, Math.PI * 2);
                         ctx.fill();
+                    }
+
+                    // Scratch marks (higher rooms = more damage)
+                    if (seed > 60 && seed < 60 + gs.room) {
+                        ctx.strokeStyle = 'rgba(0,0,0,0.2)';
+                        ctx.lineWidth = 0.6;
+                        ctx.beginPath();
+                        for (let s = 0; s < 3; s++) {
+                            ctx.moveTo(screenX + 15 + s * 8, screenY + 10);
+                            ctx.lineTo(screenX + 20 + s * 8, screenY + 50);
+                        }
+                        ctx.stroke();
                     }
                 }
             }
@@ -1848,12 +2061,25 @@
             // Dynamic lighting around player
             const plx = player.x - camera.x + player.w / 2;
             const ply = player.y - camera.y + player.h / 2;
-            const lightGrad = ctx.createRadialGradient(plx, ply, 30, plx, ply, 250);
-            lightGrad.addColorStop(0, 'rgba(255, 200, 100, 0.06)');
+            const lightRadius = 200 + (gs.satanic ? 80 : 0);
+            const lightColor = gs.satanic ? 'rgba(255, 80, 30, 0.08)' : 'rgba(255, 200, 100, 0.06)';
+            const lightGrad = ctx.createRadialGradient(plx, ply, 30, plx, ply, lightRadius);
+            lightGrad.addColorStop(0, lightColor);
             lightGrad.addColorStop(0.5, 'rgba(0,0,0,0)');
-            lightGrad.addColorStop(1, 'rgba(0,0,0,0.35)');
+            lightGrad.addColorStop(1, `rgba(0,0,0,${0.3 + gs.room * 0.02})`);
             ctx.fillStyle = lightGrad;
             ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            // Gorilla also emits light
+            if (gs.goriActive) {
+                const glx = gorilla.x + 28 - camera.x;
+                const gly = gorilla.y + 28 - camera.y;
+                const gLightGrad = ctx.createRadialGradient(glx, gly, 10, glx, gly, 80);
+                gLightGrad.addColorStop(0, gs.satanic ? 'rgba(255, 50, 0, 0.08)' : 'rgba(200, 150, 100, 0.04)');
+                gLightGrad.addColorStop(1, 'rgba(0,0,0,0)');
+                ctx.fillStyle = gLightGrad;
+                ctx.fillRect(glx - 80, gly - 80, 160, 160);
+            }
         }
 
         // === SCANLINES + VIGNETTE ===
@@ -2152,8 +2378,11 @@
 
         function collideObs(e) {
             for (const o of obstacles) {
-                if (o.noCollide) continue; // Decorative obstacles don't block
-                if (collide(e, o)) return true;
+                if (o.noCollide) continue;
+                // Slightly smaller hitbox than visual for easier navigation
+                const shrink = 4;
+                const oHit = { x: o.x + shrink, y: o.y + shrink, w: o.w - shrink * 2, h: o.h - shrink * 2 };
+                if (collide(e, oHit)) return true;
             }
             return false;
         }
@@ -2210,27 +2439,69 @@
             // Draw RE-style floor tiles
             drawFloor();
 
-            // World border (rusty metal)
-            ctx.strokeStyle = '#3a2a1a';
-            ctx.lineWidth = 8;
-            ctx.strokeRect(-camera.x - 2, -camera.y - 2, WORLD.w + 4, WORLD.h + 4);
-            ctx.strokeStyle = '#2a1a0a';
-            ctx.lineWidth = 4;
-            ctx.strokeRect(-camera.x, -camera.y, WORLD.w, WORLD.h);
+            // World border (reinforced walls with detail)
+            // Outer wall shadow
+            ctx.fillStyle = 'rgba(0,0,0,0.5)';
+            ctx.fillRect(-camera.x - 12, -camera.y - 12, WORLD.w + 24, 12);
+            ctx.fillRect(-camera.x - 12, -camera.y + WORLD.h, WORLD.w + 24, 12);
+            ctx.fillRect(-camera.x - 12, -camera.y, 12, WORLD.h);
+            ctx.fillRect(-camera.x + WORLD.w, -camera.y, 12, WORLD.h);
+            // Metal wall
+            const wallGrad = ctx.createLinearGradient(0, 0, 0, 10);
+            wallGrad.addColorStop(0, '#4a3a2a');
+            wallGrad.addColorStop(0.5, '#2a1a0a');
+            wallGrad.addColorStop(1, '#1a0a00');
+            ctx.fillStyle = wallGrad;
+            ctx.fillRect(-camera.x - 6, -camera.y - 6, WORLD.w + 12, 6);
+            ctx.fillRect(-camera.x - 6, -camera.y + WORLD.h, WORLD.w + 12, 6);
+            ctx.fillRect(-camera.x - 6, -camera.y, 6, WORLD.h);
+            ctx.fillRect(-camera.x + WORLD.w, -camera.y, 6, WORLD.h);
+            // Warning stripes on walls
+            ctx.strokeStyle = '#6a4a00';
+            ctx.lineWidth = 2;
+            for (let i = 0; i < WORLD.w; i += 40) {
+                const wx = -camera.x + i;
+                const wy1 = -camera.y - 4;
+                const wy2 = -camera.y + WORLD.h + 1;
+                if (wx > -20 && wx < canvas.width + 20) {
+                    ctx.beginPath();
+                    ctx.moveTo(wx, wy1); ctx.lineTo(wx + 10, wy1 + 5);
+                    ctx.stroke();
+                    ctx.beginPath();
+                    ctx.moveTo(wx, wy2); ctx.lineTo(wx + 10, wy2 + 5);
+                    ctx.stroke();
+                }
+            }
+            // Corner bolts
+            ctx.fillStyle = '#5a4a3a';
+            const corners = [[0,0],[WORLD.w-8,0],[0,WORLD.h-8],[WORLD.w-8,WORLD.h-8]];
+            corners.forEach(([cx,cy]) => {
+                const sx = cx - camera.x, sy = cy - camera.y;
+                ctx.beginPath();
+                ctx.arc(sx + 4, sy + 4, 4, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.fillStyle = '#3a2a1a';
+                ctx.beginPath();
+                ctx.arc(sx + 4, sy + 4, 2, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.fillStyle = '#5a4a3a';
+            });
 
             drawObstacles();
 
-            // Player movement (no border collision - expandable map)
+            // Player movement with SLIDING collision (no more getting stuck)
             const nx = player.x + player.dx;
             const ny = player.y + player.dy;
 
+            // Try X axis
+            const oldX = player.x;
             if (nx >= 0 && nx <= WORLD.w - player.w) player.x = nx;
-            if (ny >= 0 && ny <= WORLD.h - player.h) player.y = ny;
+            if (collideObs(player)) player.x = oldX;
 
-            if (collideObs(player)) {
-                player.x -= player.dx;
-                player.y -= player.dy;
-            }
+            // Try Y axis independently
+            const oldY = player.y;
+            if (ny >= 0 && ny <= WORLD.h - player.h) player.y = ny;
+            if (collideObs(player)) player.y = oldY;
 
             // Bullets
             bullets = bullets.filter(b => {
