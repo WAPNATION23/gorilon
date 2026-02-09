@@ -388,67 +388,93 @@
             </div>
         </div>
     </div>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/howler/2.2.3/howler.min.js"></script>
     <script>
         const canvas = document.getElementById('gameCanvas');
         const ctx = canvas.getContext('2d');
         const container = document.getElementById('gameContainer');
         const MAX_ROOMS = 7;
 
-        // Resize
-        function resizeCanvas() {
-            const rect = container.getBoundingClientRect();
-            canvas.width = rect.width - 16;
-            canvas.height = rect.height - 16;
+        // Debug Log for User
+        const debugLog = document.createElement('div');
+        debugLog.style.position = 'absolute';
+        debugLog.style.bottom = '10px';
+        debugLog.style.left = '10px';
+        debugLog.style.color = '#fff';
+        debugLog.style.fontSize = '10px';
+        debugLog.style.zIndex = '9999';
+        debugLog.id = 'audioDebug';
+        document.body.appendChild(debugLog);
+
+        function log(msg) {
+            console.log(msg);
+            debugLog.innerText = msg;
         }
-        resizeCanvas();
-        window.addEventListener('resize', resizeCanvas);
 
         // UI Elements
         const $ = id => document.getElementById(id);
 
-        // === MUSIC SYSTEM (Lana Del Rey - Video Games - NO ADS) ===
+        // === MUSIC SYSTEM (Howler.js) ===
         let musicPlaying = false;
         let bgMusic = null;
-        // musicBtn is defined in UI Elements below, but we can get it here or wait. 
-        // Better to wait or just use $('#musicBtn') inside functions if needed, 
-        // but since we are after $, we can just define it if DOM is ready. 
-        // Script is at end of body, so DOM is ready.
         const musicBtn = $('musicBtn');
 
-        // Audio source (Lana Del Rey - Video Games)
+        // Lana Del Rey - Video Games
         const MUSIC_URL = 'https://archive.org/download/VideoGamesLanaDelRey/Lana%20Del%20Rey%20-%20Video%20Games.mp3';
 
-        function createAudio() {
+        function initAudio() {
             if (bgMusic) return;
-            bgMusic = new Audio(MUSIC_URL);
-            bgMusic.loop = true;
-            bgMusic.volume = 0.5;
-        }
 
-        function startMusic() {
-            createAudio();
-            bgMusic.play().then(() => {
-                musicPlaying = true;
-                musicBtn.textContent = '🎵';
-                musicBtn.classList.remove('muted');
-            }).catch(e => {
-                console.log('Audio failed to play automatically', e);
+            log('Initializing Howler...');
+            bgMusic = new Howl({
+                src: [MUSIC_URL],
+                html5: true, // Force HTML5 Audio to stream large files
+                volume: 0.5,
+                loop: true,
+                onload: () => {
+                    log('Audio Loaded!');
+                    if (musicPlaying) bgMusic.play();
+                },
+                onloaderror: (id, err) => {
+                    log('Load Error: ' + err);
+                },
+                onplayerror: (id, err) => {
+                    log('Play Error: ' + err);
+                    bgMusic.once('unlock', function () {
+                        bgMusic.play();
+                    });
+                }
             });
         }
 
+        function startMusic() {
+            musicPlaying = true;
+            initAudio();
+
+            if (bgMusic.state() === 'loaded') {
+                bgMusic.play();
+                log('Playing music...');
+            } else {
+                log('Loading music...');
+            }
+
+            musicBtn.textContent = '🎵';
+            musicBtn.classList.remove('muted');
+        }
+
         function toggleMusic() {
-            createAudio();
+            initAudio();
 
             if (musicPlaying) {
                 bgMusic.pause();
                 musicBtn.textContent = '🔇';
                 musicBtn.classList.add('muted');
+                log('Music Paused');
             } else {
-                bgMusic.play().then(() => {
-                    musicPlaying = true;
-                    musicBtn.textContent = '🎵';
-                    musicBtn.classList.remove('muted');
-                }).catch(e => console.log(e));
+                bgMusic.play();
+                musicBtn.textContent = '🎵';
+                musicBtn.classList.remove('muted');
+                log('Music Resumed');
             }
             musicPlaying = !musicPlaying;
         }
