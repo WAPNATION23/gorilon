@@ -388,93 +388,48 @@
             </div>
         </div>
     </div>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/howler/2.2.3/howler.min.js"></script>
+
+
     <script>
         const canvas = document.getElementById('gameCanvas');
         const ctx = canvas.getContext('2d');
         const container = document.getElementById('gameContainer');
         const MAX_ROOMS = 7;
 
-        // Debug Log for User
-        const debugLog = document.createElement('div');
-        debugLog.style.position = 'absolute';
-        debugLog.style.bottom = '10px';
-        debugLog.style.left = '10px';
-        debugLog.style.color = '#fff';
-        debugLog.style.fontSize = '10px';
-        debugLog.style.zIndex = '9999';
-        debugLog.id = 'audioDebug';
-        document.body.appendChild(debugLog);
-
-        function log(msg) {
-            console.log(msg);
-            debugLog.innerText = msg;
-        }
-
         // UI Elements
         const $ = id => document.getElementById(id);
 
-        // === MUSIC SYSTEM (Howler.js) ===
-        let musicPlaying = false;
-        let bgMusic = null;
+        // === MUSIC SYSTEM (Native Audio API) ===
+        // This is the most reliable method for mobile:
+        // 1. Create Audio object
+        // 2. Play() inside a direct touch event (Start Button)
         const musicBtn = $('musicBtn');
-
-        // Lana Del Rey - Video Games
         const MUSIC_URL = 'https://archive.org/download/VideoGamesLanaDelRey/Lana%20Del%20Rey%20-%20Video%20Games.mp3';
+        let bgMusic = new Audio(MUSIC_URL);
+        bgMusic.loop = true;
+        bgMusic.volume = 0.5;
+        let musicPlaying = false;
 
-        function initAudio() {
-            if (bgMusic) return;
-
-            log('Initializing Howler...');
-            bgMusic = new Howl({
-                src: [MUSIC_URL],
-                html5: true, // Force HTML5 Audio to stream large files
-                volume: 0.5,
-                loop: true,
-                onload: () => {
-                    log('Audio Loaded!');
-                    if (musicPlaying) bgMusic.play();
-                },
-                onloaderror: (id, err) => {
-                    log('Load Error: ' + err);
-                },
-                onplayerror: (id, err) => {
-                    log('Play Error: ' + err);
-                    bgMusic.once('unlock', function () {
-                        bgMusic.play();
-                    });
-                }
+        function tryPlayMusic() {
+            // Force play on interaction
+            bgMusic.play().then(() => {
+                musicPlaying = true;
+                musicBtn.textContent = '🎵';
+                musicBtn.classList.remove('muted');
+            }).catch(e => {
+                console.log("Audio waiting for interaction...");
             });
         }
 
-        function startMusic() {
-            musicPlaying = true;
-            initAudio();
-
-            if (bgMusic.state() === 'loaded') {
-                bgMusic.play();
-                log('Playing music...');
-            } else {
-                log('Loading music...');
-            }
-
-            musicBtn.textContent = '🎵';
-            musicBtn.classList.remove('muted');
-        }
-
         function toggleMusic() {
-            initAudio();
-
             if (musicPlaying) {
                 bgMusic.pause();
                 musicBtn.textContent = '🔇';
                 musicBtn.classList.add('muted');
-                log('Music Paused');
             } else {
                 bgMusic.play();
                 musicBtn.textContent = '🎵';
                 musicBtn.classList.remove('muted');
-                log('Music Resumed');
             }
             musicPlaying = !musicPlaying;
         }
@@ -570,8 +525,8 @@
             levelIntro.style.display = 'none';
             gs.paused = false;
 
-            // START MUSIC on first level start
-            startMusic();
+            // FORCE MUSIC START DIRECTLY
+            tryPlayMusic();
 
             // Spawn boss on room 4 and 7
             if (gs.room === 4 || gs.room === 7) {
