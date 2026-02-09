@@ -522,8 +522,8 @@
             "👑 LA BATALLA FINAL TE ESPERA\nEl Boss Zombi quiere pelea,\nPero Hello Kitty es la verdadera\n¡REINA DEL APOCALIPSIS!"
         ];
 
-        const GORILLA_PHRASES = ["¡ALÉJENSE DE MI SEÑORA! 🦍", "¡SALGAN, SABANDIJAS!", "¡NADIE TOCA A HELLO KITTY!", "¡PA' FUERA, BICHOS!", "¡SOY SU GUARDIÁN!", "¡MUERE, ZOMBI!", "¡POR MI GATITA!", "¡OTRO PA'L HOYO!", "¡EL GORILÓN NO PERDONA!", "¡FUERA DE AQUÍ!"];
-        const GAME_OVER_MSG = ["¿Llamada de odio? 📞", "El Gorilón llora 🦍💔", "Los zombis ganaron 🎉", "¡Vuelve más fuerte! 💪"];
+        const GORILLA_PHRASES = ["SALE PAJARÓN CULIAO FEO 🦍", "PERRO IJO LA PERRA 🐕", "SAPO CTMRE 🐸", "ROBO MÁS QUE USTEDES WEON", "YOJOI CHORO WUOM 😤", "ÉNFASISSS 💪🔥", "CON MI SEÑORA NO PAJARÓN CULIAO 🦍❤️", "ALÉJATE DE MI KUROMI CULIAO 💀", "CARTERA DE MIMBRE Y LA CTMRE KSAKJSKJ 🧺", "ANDA PA LA CASA PERKIN QL 🏠", "TERRIBLE DE SACOWEA ESTE ZOMBI 💀", "SOY MÁS CHORO QUE TODOS USTEDES 😎", "PURO PERKIN MUERTO AQUÍ WUOM 🪦", "CACHÁI O NO CACHÁI CTMRE 🧠"];
+        const GAME_OVER_MSG = ["CAGASTE WUOM 💀", "El Gorilón se fue pal hoyo 🦍💔", "Los zombis te sacaron la chucha 🎉", "¡Vuelve más choro! 💪", "TERRIBLE DE MALO WUON 😭"];
 
         // World size (expandable map)
         const WORLD = { w: 1200, h: 900 };
@@ -1732,7 +1732,7 @@
                         boss.hp -= 3;
                         boss.hit = 10;
                         addFloat(boss.x + 40, boss.y, '-3');
-                        showSpeech(gs.satanic ? "¡¡MUERE, DEMONIO!! 👹🔥" : GORILLA_PHRASES[Math.floor(Math.random() * GORILLA_PHRASES.length)]);
+                        showSpeech(gs.satanic ? "MUERE DEMONIO CULIAO 👹🔥" : GORILLA_PHRASES[Math.floor(Math.random() * GORILLA_PHRASES.length)]);
 
                         if (boss.hp <= 0) {
                             gs.score += 50;
@@ -2039,7 +2039,7 @@
                     gs.goriTimer = 500;
                     gorilla.x = player.x - 30;
                     gorilla.y = player.y - 40;
-                    showSpeech("¡LLEGÓ EL GORILÓN! 🦍💪");
+                    showSpeech("LLEGÓ EL CHORO MÁS CHORO 🦍💪 WUOM");
                     updateUI();
                     return false;
                 }
