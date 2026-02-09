@@ -494,8 +494,10 @@
             levelIntro.style.display = 'none';
             gs.paused = false;
 
-            // START MUSIC on first level start
-            startMusic();
+            // START MUSIC on first level start (delay to ensure function exists)
+            setTimeout(() => {
+                if (typeof startMusic === 'function') startMusic();
+            }, 100);
 
             // Spawn boss on room 4 and 7
             if (gs.room === 4 || gs.room === 7) {
@@ -1513,15 +1515,14 @@
         let bgMusic = null;
         const musicBtn = $('musicBtn');
 
-        // Direct audio source (no YouTube ads!)
-        const MUSIC_URL = 'https://archive.org/download/VideoGamesLanaDelRey/Lana%20Del%20Rey%20-%20Video%20Games.mp3';
+        // Audio source (simple and reliable)
+        const MUSIC_URL = 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3';
 
         function createAudio() {
             if (bgMusic) return;
             bgMusic = new Audio(MUSIC_URL);
             bgMusic.loop = true;
             bgMusic.volume = 0.5;
-            bgMusic.crossOrigin = 'anonymous';
         }
 
         function startMusic() {
@@ -1529,11 +1530,11 @@
             bgMusic.play().then(() => {
                 musicPlaying = true;
                 musicBtn.textContent = '🎵';
-                musicBtn.classList.remove('muted');
             }).catch(e => {
-                console.log('Audio needs user interaction');
+                console.log('Audio failed');
             });
         }
+
 
         function toggleMusic() {
             createAudio();
