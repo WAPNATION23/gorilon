@@ -1444,77 +1444,28 @@
         requestAnimationFrame(update);
         console.log('%c🎀 Protocolo Gorilón v2.0', 'font-size: 20px; color: #ff69b4; background: #0f380f; padding: 10px;');
 
-        // === MUSIC SYSTEM ===
-        let audioCtx = null;
+        // === MUSIC SYSTEM (Lana Del Rey - Video Games) ===
+        let bgMusic = null;
         let musicPlaying = false;
-        let oscillators = [];
         const musicBtn = $('musicBtn');
 
-        function createAmbientMusic() {
-            if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-
-            const masterGain = audioCtx.createGain();
-            masterGain.gain.value = 0.15;
-            masterGain.connect(audioCtx.destination);
-
-            // Low drone
-            const drone = audioCtx.createOscillator();
-            drone.type = 'sine';
-            drone.frequency.value = 55;
-            const droneGain = audioCtx.createGain();
-            droneGain.gain.value = 0.4;
-            drone.connect(droneGain).connect(masterGain);
-            drone.start();
-            oscillators.push(drone);
-
-            // Creepy high
-            const high = audioCtx.createOscillator();
-            high.type = 'triangle';
-            high.frequency.value = 440;
-            const highGain = audioCtx.createGain();
-            highGain.gain.value = 0.05;
-            high.connect(highGain).connect(masterGain);
-            high.start();
-            oscillators.push(high);
-
-            // LFO
-            const lfo = audioCtx.createOscillator();
-            lfo.type = 'sine';
-            lfo.frequency.value = 0.1;
-            const lfoGain = audioCtx.createGain();
-            lfoGain.gain.value = 20;
-            lfo.connect(lfoGain).connect(high.frequency);
-            lfo.start();
-            oscillators.push(lfo);
-
-            // Rumble
-            const rumble = audioCtx.createOscillator();
-            rumble.type = 'sawtooth';
-            rumble.frequency.value = 30;
-            const rumbleGain = audioCtx.createGain();
-            rumbleGain.gain.value = 0.08;
-            const filter = audioCtx.createBiquadFilter();
-            filter.type = 'lowpass';
-            filter.frequency.value = 100;
-            rumble.connect(filter).connect(rumbleGain).connect(masterGain);
-            rumble.start();
-            oscillators.push(rumble);
-        }
-
-        function stopMusic() {
-            oscillators.forEach(o => o.stop());
-            oscillators = [];
-            if (audioCtx) { audioCtx.close(); audioCtx = null; }
-        }
+        // Temporal: Lana Del Rey - Video Games
+        const MUSIC_URL = 'https://cdn.trendybeatz.com/audio/Lana-Del-Rey-Video-Games-(TrendyBeatz.com).mp3';
 
         function toggleMusic() {
+            if (!bgMusic) {
+                bgMusic = new Audio(MUSIC_URL);
+                bgMusic.loop = true;
+                bgMusic.volume = 0.4;
+            }
+
             if (musicPlaying) {
-                stopMusic();
+                bgMusic.pause();
                 musicBtn.textContent = '🔇';
                 musicBtn.classList.add('muted');
             } else {
-                createAmbientMusic();
-                musicBtn.textContent = '🔊';
+                bgMusic.play().catch(e => console.log('Audio blocked, tap again'));
+                musicBtn.textContent = '🎵';
                 musicBtn.classList.remove('muted');
             }
             musicPlaying = !musicPlaying;
